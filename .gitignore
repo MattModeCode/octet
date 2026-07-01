@@ -1,0 +1,49 @@
+# --- Secrets / config (never commit) ---
+.env
+.env.*
+serviceAccountKey*.json
+google-services.json
+GoogleService-Info.plist
+firebase-config.local.*
+.firebase/
+firebase-debug.log*
+*.keystore
+*.p12
+*.mobileprovision
+
+# --- Godot ---
+.godot/
+.import/
+export_presets.cfg
+*.translation
+
+# --- Native (Rust GDExtension) ---
+/native/target/
+*.o
+*.obj
+
+# --- Cloud Functions / Node ---
+node_modules/
+functions/node_modules/
+*.log
+npm-debug.log*
+
+# --- Build / export artifacts ---
+/build/
+/dist/
+/exports/
+*.exe
+*.dmg
+*.pck
+*.zip
+*.app/
+
+# --- Obsidian vault (read-only, external) ---
+/vault/
+.obsidian/
+
+# --- Editor / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
