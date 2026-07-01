@@ -8,7 +8,8 @@ Full stage rationale lives in the original Claude Code plan; this file is the wo
 
 ## Status
 
-**Current stage: 3 (M1b — HUD, results, calibration, song select) — IN PROGRESS. Non-HUD parts (results, calibration, song select, gameplay flow) COMPLETE and verified. HUD-from-2A import BLOCKED — see below.**
+**Current stage: 4 (M2a — Editor shell, audio import, waveform, timing) — IN PROGRESS. Audio import, waveform, timing points, transport all COMPLETE and verified. Editor-shell-from-1A import BLOCKED — see below (same blocker as Stage 3's HUD).**
+**Stage 3 (M1b — HUD, results, calibration, song select) — IN PROGRESS. Non-HUD parts (results, calibration, song select, gameplay flow) COMPLETE and verified. HUD-from-2A import BLOCKED — see below.**
 **Stage 2 (M1a — Core gameplay systems) — COMPLETE, verified headless under Godot 4.7.**
 **Stage 1 (M0 — Conductor clock & one-lane vertical slice) — COMPLETE, verified headless under Godot 4.7.**
 **Stage 0 (Foundation & design system) — COMPLETE, verified headless under Godot 4.7.**
