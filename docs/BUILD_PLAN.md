@@ -166,11 +166,36 @@ Ran 21 test(s): 21 passed, 0 failed.
 - Confirm Design MCP availability and import HUD variant 2A into `game/gameplay.gd`'s visuals (replacing the plain Labels — the Conductor/LaneInput/JudgeEngine wiring underneath stays as-is).
 - A manual in-editor playthrough with real audio timing (song select → play → results; calibration with real taps) to confirm feel, not just absence of script errors.
 
-## Stage 4 — M2a: Editor shell, audio import, waveform, timing — ⬜ not started
-- Precondition: Design MCP connected, import `Octet - Editor.dc.html` (1A).
-- [ ] Editor shell from 1A. Audio import (MP3/OGG/WAV → PCM). Waveform + playhead. Manual BPM/offset + beat-grid overlay. Timing points. Transport (scrub, 0.25×–1×).
-- Subagents: (1) Editor shell, (2) Audio import + waveform, (3) Timing model.
-- Done when: import a song, see waveform, set BPM/offset, beat grid snaps, scrub at variable rate.
+## Stage 4 — M2a: Editor shell, audio import, waveform, timing — 🟡 IN PROGRESS
+
+### BLOCKED: Editor shell from imported 1A mockup
+- [ ] Editor shell from 1A (`Octet - Editor.dc.html`). **Same precondition failure as Stage 3's HUD**: the Claude Design MCP isn't connected in this Claude Code installation (no `/design-login` command available; `DesignSync` is a different, unrelated tool — see Stage 3's handoff for the full investigation). `editor/editor_main.tscn`'s plain-Control layout (below) stands in until that's resolved.
+
+### What's built (everything else in Stage 4, verified)
+- **`editor/audio_import.gd`** (`AudioImport`) — accepts MP3/OGG Vorbis/WAV (§3.1) via `AudioStreamWAV/MP3/OggVorbis.load_from_file()` (all three confirmed to exist in Godot 4.7 — verified empirically before committing to this API, see gotcha below). `build_waveform_peaks(stream, bucket_count)` decodes the **actual audio** offline into a peak-amplitude envelope for the waveform — no realtime audio device needed — using `AudioStreamPlayback.mix_audio(rate_scale, frames)`, a real scriptable method on every playback subclass that returns genuine decoded PCM frames and signals end-of-stream by returning fewer frames than requested. Verified against a `Metronome`-built click track: peaks landed exactly on the known click positions (0/500/1000/1500ms) with silence everywhere else.
+- **`editor/beat_grid.gd`** (`BeatGrid`) — multi-timing-point beat math (§3.4): `beat_times_ms()` walks each timing point's segment generating beat boundaries at its own BPM (the next timing point's `time_ms` ends the segment); `active_timing_point()` finds which timing point governs a given time; `snap_time_ms()` snaps to the nearest grid line at a given division under the active timing point. Also exposes `SNAP_DIVISIONS` (1/1 through 1/16) ready for Stage 5's note placement to consume — the selector UI itself isn't built yet since it's tied to note placement, out of Stage 4's scope.
+- **`editor/waveform_view.gd`** — a custom-`_draw()` `Control` rendering the peak envelope as bars, beat lines from `BeatGrid`, and a playhead (§3.3); `x_to_time_ms()` converts a click position back to song time for scrubbing.
+- **`editor/editor_main.gd`/`.tscn`** — the functional (not 1A-styled) shell: Import button + `FileDialog` (real runtime file picker, not editor-only), BPM/offset `SpinBox`es bound to the first timing point, an "add timing point at playhead" button with per-row remove (guarded so the first timing point — the song's offset — can't be removed), Play/Pause/Stop, a 0.25×/0.5×/0.75×/1× rate selector, and click-to-seek on the waveform. Reuses `Conductor` for all playback/scrub (added `set_playback_rate()`/`playback_rate()` there, backed by `AudioStreamPlayer.pitch_scale` — gameplay never calls it, so no regression risk to Stages 1-3). No save/export yet (`Chart`/`TimingPoint` state lives in memory only) — that's Stage 5.
+- **Tests**: `tests/test_beat_grid.gd` (`TestBeatGrid`, 4 cases) and `tests/test_audio_import.gd` (`TestAudioImport`, 3 cases, including the WAV round-trip via `save_to_wav()`/`load_audio_file()` and the click-position waveform check), registered in `run_tests.gd`.
+
+### Gotchas found during integration
+1. **Godot 4.7's offline audio-decode API isn't obvious from memory alone, so it was verified empirically before writing `audio_import.gd` against it** (see the pattern: build a synthetic WAV via `Metronome`, `save_to_wav()` it to a real file, then probe the API with throwaway scripts) — confirmed: `AudioStreamWAV/MP3/OggVorbis.load_from_file(path)` all exist and accept `user://` paths directly (not just OS-absolute paths); `AudioStreamWAV.save_to_wav(path)` exists; and critically, `AudioStreamPlayback.mix_audio(rate_scale, frames) -> PackedVector2Array` is a real, scriptable, non-underscore-prefixed method present on every playback subclass that decodes actual PCM with no realtime audio device involved — this is what makes offline waveform generation (and, later, Stage 6's onset/BPM analysis) possible in pure GDScript at all.
+2. **No format-agnostic way to query an `AudioStream`'s sample rate from GDScript** — `AudioStreamWAV` exposes `.mix_rate`, but `AudioStreamMP3`/`AudioStreamOggVorbis` expose neither a `mix_rate` property nor any `get_stream_sampling_rate()`-style method (checked via `ClassDB.class_get_property_list`/`class_get_method_list` — confirmed absent, not just undocumented). Worked around by bucketing the waveform envelope by **actual decoded frame count** (a full decode pass first, bucket afterward) instead of a precomputed `duration_sec * sample_rate` total. Worth remembering for Stage 6's DSP work, which will hit the same gap.
+3. GDScript's static type checker can't infer the element type of a `for` loop over an untyped array literal (same gotcha as Stage 3's `song_select.gd` — didn't recur here since `beat_grid.gd`/`audio_import.gd` were written with this already in mind, but worth restating since it'll keep coming up).
+
+### Design decisions worth carrying to the vault (per CLAUDE.md §1/§3)
+- **The offline `mix_audio()` decode approach is the seam Stage 6's real onset-detection/BPM-estimation DSP should build on** — it already gives genuine PCM frames without a Rust GDExtension. Whether pure-GDScript FFT/spectral-flux performance on a 3-5 minute song is "tolerable" (PROJECT_BRIEF §3.2's stated MVP-fallback bar) is the open question Stage 6 needs to measure before deciding GDScript vs. the Rust GDExtension path — this stage's work at least de-risks the "can we get PCM at all" half of that decision.
+- **Editor transport reuses the same `Conductor` autoload as gameplay** rather than a separate playback path, consistent with CLAUDE.md's "Conductor clock is central" rule — variable rate is a pitch_scale change (speed+pitch together, no time-stretch DSP), an honest, simple choice rather than a more complex pitch-preserving stretch.
+
+### Verification run (Godot 4.7.stable)
+```
+Ran 28 test(s): 28 passed, 0 failed.
+```
+`godot --headless --quit` clean boot. `godot --headless --path . res://editor/editor_main.tscn --quit-after 30` runs error-free. Full import → waveform decode → BPM/offset edit → add/remove timing point → play/stop flow verified end-to-end via a throwaway script driving `editor_main.gd`'s handlers directly with a real saved WAV file (bypassing the `FileDialog` UI, which needs a real click) — no runtime errors. Manual in-editor test (actually clicking Import and picking a real MP3/OGG/WAV file, dragging the waveform to scrub, changing rate) still recommended — not yet done with a real audio file or real user interaction.
+
+### What's still needed before Stage 4 can be marked fully complete
+- Confirm Design MCP availability and import editor shell variant 1A (replacing `editor_main.tscn`'s plain layout — the audio-import/waveform/timing-point/transport logic underneath stays as-is).
+- A manual in-editor test with a real audio file (the throwaway verification only used a synthetic `Metronome` WAV) and real mouse/keyboard interaction.
 
 ## Stage 5 — M2b: Note editing, QOL, save/export, playtest — ⬜ not started
 - [ ] Note timeline, snap 1/1–1/16, chords/holds/free-place.
