@@ -82,6 +82,31 @@ func _register_all_tests() -> void:
 	for entry in audio_import_suite.get_tests():
 		_tests.append(TestCase.new(entry.name, entry.callable))
 
+	var note_editor_suite := TestNoteEditor.new()
+	_suites.append(note_editor_suite)
+	for entry in note_editor_suite.get_tests():
+		_tests.append(TestCase.new(entry.name, entry.callable))
+
+	var undo_stack_suite := TestUndoStack.new()
+	_suites.append(undo_stack_suite)
+	for entry in undo_stack_suite.get_tests():
+		_tests.append(TestCase.new(entry.name, entry.callable))
+
+	var octet_bundle_suite := TestOctetBundleWrite.new()
+	_suites.append(octet_bundle_suite)
+	for entry in octet_bundle_suite.get_tests():
+		_tests.append(TestCase.new(entry.name, entry.callable))
+
+	var dsp_fft_suite := TestDspFft.new()
+	_suites.append(dsp_fft_suite)
+	for entry in dsp_fft_suite.get_tests():
+		_tests.append(TestCase.new(entry.name, entry.callable))
+
+	var audio_analysis_suite := TestAudioAnalysis.new()
+	_suites.append(audio_analysis_suite)
+	for entry in audio_analysis_suite.get_tests():
+		_tests.append(TestCase.new(entry.name, entry.callable))
+
 
 func _run_all_tests() -> int:
 	var pass_count := 0

@@ -35,6 +35,14 @@ static func load_oct(path: String) -> Chart:
 	return _dict_to_chart(data)
 
 
+## Serializes `chart` to the .oct JSON text -- the same shape save_oct()
+## writes to disk, exposed as a string for callers that need the bytes
+## without a file round-trip (e.g. OctetBundle.write_bundle packing a
+## chart directly into a zip entry).
+static func chart_to_json(chart: Chart) -> String:
+	return JSON.stringify(_chart_to_dict(chart), "  ")
+
+
 ## Serializes `chart` to the .oct JSON shape and writes it to `path`.
 ## Returns OK on success, or a Godot Error code on failure.
 static func save_oct(chart: Chart, path: String) -> Error:
@@ -42,8 +50,7 @@ static func save_oct(chart: Chart, path: String) -> Error:
 		push_error("OctIO.save_oct: chart is null")
 		return ERR_INVALID_PARAMETER
 
-	var data: Dictionary = _chart_to_dict(chart)
-	var text: String = JSON.stringify(data, "  ")
+	var text: String = chart_to_json(chart)
 
 	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if file == null:

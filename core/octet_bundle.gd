@@ -4,9 +4,10 @@
 ## chart_<difficulty>.oct files, optional cover.jpg/background.jpg, and
 ## manifest.json (bundle-level metadata, checksums, list of charts).
 ##
-## Full bundle read/write is Stage 5 (M2b) scope. For now this exposes a
-## working manifest reader (needed by anything that just wants to inspect a
-## bundle) and a documented write stub.
+## Full read/write (Stage 5 / M2b) -- cover/background art packing is the
+## one piece not yet wired into the editor's export flow (no cover-art
+## picker exists), though write_bundle() accepts it via the manifest dict
+## if a caller supplies it.
 class_name OctetBundle
 extends RefCounted
 
@@ -48,29 +49,70 @@ static func read_manifest(bundle_path: String) -> Dictionary:
 	return data
 
 
-## Writes a .octet bundle to `bundle_path`.
+## Writes a full .octet bundle to `bundle_path` (§4.2): the audio file at
+## `audio_path` (packed as `song.<original extension>`), one `.oct` entry
+## per difficulty in `charts` (packed via OctIO.chart_to_json -- no temp
+## files on disk), and `manifest.json` merging the caller-supplied
+## `manifest` dict with the computed audio filename, per-difficulty list
+## (name/chartPath/starRating/noteCount), and a SHA-256 checksum of the
+## packed audio. Cover/background art is not yet part of the editor's
+## export flow (no cover-art picker built) -- packed only if the caller
+## adds `cover_path`/`background_path` keys to `manifest` (not currently
+## done by editor/editor_main.gd).
 ##
-## TODO(Stage 5 / M2b): full implementation — write audio, per-difficulty
-## .oct files, cover/background art, and manifest.json with checksums per
-## PROJECT_BRIEF §4.2.
-##
-## For now this is a stub that only writes the manifest.json entry (so the
-## manifest round-trip works end-to-end via read_manifest above); audio and
-## chart args are accepted but not yet packed into the archive.
-static func write_bundle(_bundle_path: String, _audio_path: String, _charts: Array[Chart], _manifest: Dictionary) -> Error:
+## Returns OK on success, or a Godot Error code on failure (bad bundle
+## path, unreadable audio file, etc.) -- never partially writes without
+## reporting the failure.
+static func write_bundle(bundle_path: String, audio_path: String, charts: Array[Chart], manifest: Dictionary) -> Error:
+	var audio_file: FileAccess = FileAccess.open(audio_path, FileAccess.READ)
+	if audio_file == null:
+		var open_err: Error = FileAccess.get_open_error()
+		push_error("OctetBundle.write_bundle: failed to open audio %s (error %d)" % [audio_path, open_err])
+		return open_err
+	var audio_bytes: PackedByteArray = audio_file.get_buffer(audio_file.get_length())
+	audio_file.close()
+
 	var packer := ZIPPacker.new()
-	var open_err: Error = packer.open(_bundle_path)
+	var open_err: Error = packer.open(bundle_path)
 	if open_err != OK:
-		push_error("OctetBundle.write_bundle: failed to open %s for writing (error %d)" % [_bundle_path, open_err])
+		push_error("OctetBundle.write_bundle: failed to open %s for writing (error %d)" % [bundle_path, open_err])
 		return open_err
 
-	packer.start_file("manifest.json")
-	packer.write_file(JSON.stringify(_manifest, "  ").to_utf8_buffer())
+	var audio_entry_name := "song.%s" % audio_path.get_extension()
+	packer.start_file(audio_entry_name)
+	packer.write_file(audio_bytes)
 	packer.close_file()
 
-	# TODO(Stage 5 / M2b): pack _audio_path as song.<ext>, each entry of
-	# _charts as chart_<difficulty>.oct (via OctIO.save_oct into a temp
-	# buffer), and optional cover.jpg/background.jpg. Compute and store
-	# checksums in the manifest before writing it above.
+	var difficulty_entries: Array = []
+	for chart in charts:
+		var safe_name := chart.metadata.difficulty_name.to_lower().replace(" ", "_")
+		if safe_name.is_empty():
+			safe_name = "difficulty"
+		var entry_name := "chart_%s.oct" % safe_name
+		packer.start_file(entry_name)
+		packer.write_file(OctIO.chart_to_json(chart).to_utf8_buffer())
+		packer.close_file()
+		difficulty_entries.append({
+			"name": chart.metadata.difficulty_name,
+			"chartPath": entry_name,
+			"starRating": chart.metadata.star_rating,
+			"noteCount": chart.notes.size(),
+		})
+
+	var full_manifest: Dictionary = manifest.duplicate(true)
+	full_manifest["audio"] = audio_entry_name
+	full_manifest["difficulties"] = difficulty_entries
+	full_manifest["audioChecksumSha256"] = _sha256_hex(audio_bytes)
+
+	packer.start_file("manifest.json")
+	packer.write_file(JSON.stringify(full_manifest, "  ").to_utf8_buffer())
+	packer.close_file()
 
 	return packer.close()
+
+
+static func _sha256_hex(bytes: PackedByteArray) -> String:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	ctx.update(bytes)
+	return ctx.finish().hex_encode()

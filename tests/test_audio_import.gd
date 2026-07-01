@@ -15,6 +15,7 @@ func get_tests() -> Array[Dictionary]:
 		{"name": "audio_import_load_wav_round_trip", "callable": test_load_wav_round_trip},
 		{"name": "audio_import_unsupported_extension", "callable": test_unsupported_extension},
 		{"name": "audio_import_waveform_peaks_match_clicks", "callable": test_waveform_peaks_match_clicks},
+		{"name": "audio_import_decode_full_pcm_and_sample_rate", "callable": test_decode_full_pcm_and_sample_rate},
 	]
 
 
@@ -44,7 +45,8 @@ func test_unsupported_extension() -> bool:
 
 func test_waveform_peaks_match_clicks() -> bool:
 	var stream := Metronome.build(120.0, 1, 4) # 2s, clicks at 0/500/1000/1500ms.
-	var peaks := AudioImport.build_waveform_peaks(stream, 40) # 50ms/bucket.
+	var samples := AudioImport.decode_full_pcm(stream)
+	var peaks := AudioImport.build_waveform_peaks(samples, 40) # 50ms/bucket.
 
 	var ok := TestRunner._assert(peaks.size() == 40, "audio_import_waveform_peaks_match_clicks: expected 40 buckets, got %d" % peaks.size())
 	var click_buckets: Array[int] = [0, 10, 20, 30]
@@ -54,4 +56,16 @@ func test_waveform_peaks_match_clicks() -> bool:
 	ok = TestRunner._assert(is_equal_approx(peaks[5], 0.0), "audio_import_waveform_peaks_match_clicks: bucket 5 expected silence, got %s" % str(peaks[5])) and ok
 	if ok:
 		print("[PASS] audio_import_waveform_peaks_match_clicks")
+	return ok
+
+
+func test_decode_full_pcm_and_sample_rate() -> bool:
+	var stream := Metronome.build(120.0, 1, 4, 44100) # 2s @ 44100Hz.
+	var samples := AudioImport.decode_full_pcm(stream)
+	var ok := TestRunner._assert(not samples.is_empty(), "audio_import_decode_full_pcm_and_sample_rate: expected non-empty decoded samples")
+
+	var rate := AudioImport.effective_sample_rate(samples, stream.get_length())
+	ok = TestRunner._assert(absf(rate - 44100.0) < 50.0, "audio_import_decode_full_pcm_and_sample_rate: expected ~44100Hz, got %s" % str(rate)) and ok
+	if ok:
+		print("[PASS] audio_import_decode_full_pcm_and_sample_rate")
 	return ok

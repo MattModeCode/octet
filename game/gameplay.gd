@@ -54,13 +54,15 @@ func _ready() -> void:
 	_apply_colours()
 	_quit_button.pressed.connect(_on_quit_pressed)
 
-	var chart_path := PlaySession.current_chart_path()
-	if chart_path.is_empty():
-		chart_path = FALLBACK_CHART_PATH
-
-	_chart = OctIO.load_oct(chart_path)
+	_chart = PlaySession.take_pending_chart()
 	if _chart == null:
-		push_error("gameplay: failed to load chart at %s" % chart_path)
+		var chart_path := PlaySession.current_chart_path()
+		if chart_path.is_empty():
+			chart_path = FALLBACK_CHART_PATH
+		_chart = OctIO.load_oct(chart_path)
+
+	if _chart == null:
+		push_error("gameplay: failed to load a chart")
 		return
 
 	_engine = JudgeEngine.new(_chart, Config.gameplay, Config.scoring, PlaySession.mods)
@@ -72,7 +74,9 @@ func _ready() -> void:
 	_chart_end_ms = _compute_chart_end_ms()
 	_build_note_visuals()
 	_update_hud()
-	Conductor.play(_build_backing_track())
+
+	var pending_audio := PlaySession.take_pending_audio_stream()
+	Conductor.play(pending_audio if pending_audio != null else _build_backing_track())
 
 
 func _process(_delta: float) -> void:

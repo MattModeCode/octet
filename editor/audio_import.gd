@@ -50,26 +50,15 @@ static func load_audio_file(path: String) -> AudioStream:
 			return null
 
 
-## Decodes [param stream] end to end and returns a peak-amplitude envelope
-## with [param bucket_count] evenly spaced buckets spanning its full
-## duration -- one representative value (0.0-1.0) per bucket, the max
-## absolute sample magnitude across both channels in that time slice. This
-## is the data editor/waveform_view.gd renders as bars; it is a real decode
-## of the actual audio, not an approximation.
-##
-## Note: AudioStreamPlayback exposes no public sample-rate accessor for
-## compressed formats (confirmed empirically -- MP3/OggVorbis expose
-## get_length() but nothing rate-related), so this buckets by actual
-## decoded frame count rather than a precomputed expected total: a full
-## first pass collects per-frame magnitude, then that array is split into
-## bucket_count buckets. One-time editor-import cost, not a hot path.
-static func build_waveform_peaks(stream: AudioStream, bucket_count: int) -> PackedFloat32Array:
-	var peaks := PackedFloat32Array()
-	peaks.resize(bucket_count)
-	if bucket_count <= 0:
-		return peaks
-
-	var magnitudes := PackedFloat32Array()
+## Decodes [param stream] end to end into mono signed samples (L/R
+## averaged), via repeated AudioStreamPlayback.mix_audio() calls until the
+## stream is exhausted (signalled by a returned chunk shorter than
+## requested). This is the single decode pass shared by both
+## build_waveform_peaks() (below) and Stage 6's editor/audio_analysis.gd
+## -- decoding a multi-minute song is real work, so it happens once per
+## import, not once per consumer.
+static func decode_full_pcm(stream: AudioStream) -> PackedFloat32Array:
+	var samples := PackedFloat32Array()
 	var playback := stream.instantiate_playback()
 	playback.start()
 
@@ -78,17 +67,42 @@ static func build_waveform_peaks(stream: AudioStream, bucket_count: int) -> Pack
 		if chunk.is_empty():
 			break
 		for frame in chunk:
-			magnitudes.append(maxf(absf(frame.x), absf(frame.y)))
+			samples.append((frame.x + frame.y) * 0.5)
 		if chunk.size() < DECODE_CHUNK_FRAMES:
 			break
 
-	if magnitudes.is_empty():
+	return samples
+
+
+## Effective sample rate for [param samples] decoded from a stream of
+## known [param duration_sec] -- AudioStreamPlayback exposes no public
+## sample-rate accessor for compressed formats (confirmed empirically:
+## MP3/OggVorbis expose get_length() but nothing rate-related), so this
+## derives it from the actual decoded frame count instead, the same
+## workaround build_waveform_peaks() already relied on.
+static func effective_sample_rate(samples: PackedFloat32Array, duration_sec: float) -> float:
+	if duration_sec <= 0.0:
+		return 0.0
+	return samples.size() / duration_sec
+
+
+## Buckets already-decoded [param samples] (decode_full_pcm() output) into
+## [param bucket_count] evenly spaced peak-amplitude buckets spanning the
+## full sample array -- one representative value (0.0-1.0) per bucket, the
+## max absolute sample magnitude in that time slice. This is the data
+## editor/waveform_view.gd renders; it is a real decode of the actual
+## audio, not an approximation.
+static func build_waveform_peaks(samples: PackedFloat32Array, bucket_count: int) -> PackedFloat32Array:
+	var peaks := PackedFloat32Array()
+	peaks.resize(bucket_count)
+	if bucket_count <= 0 or samples.is_empty():
 		return peaks
 
-	var frames_per_bucket := maxf(1.0, float(magnitudes.size()) / bucket_count)
-	for i in magnitudes.size():
+	var frames_per_bucket := maxf(1.0, float(samples.size()) / bucket_count)
+	for i in samples.size():
 		var bucket := mini(int(float(i) / frames_per_bucket), bucket_count - 1)
-		if magnitudes[i] > peaks[bucket]:
-			peaks[bucket] = magnitudes[i]
+		var magnitude := absf(samples[i])
+		if magnitude > peaks[bucket]:
+			peaks[bucket] = magnitude
 
 	return peaks

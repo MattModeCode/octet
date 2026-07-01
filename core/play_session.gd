@@ -19,6 +19,29 @@ var mods: GameplayMods = GameplayMods.new()
 ## persist across change_scene_to_file).
 var last_engine: JudgeEngine = null
 
+## Playtest-in-editor bridge (§3.6): editor_main.gd sets these to hand
+## gameplay.gd an in-memory Chart/AudioStream directly, bypassing the
+## normal load-from-.oct-path and Metronome-backing-track flow (song
+## select never sets these). Each is consumed (cleared) the moment
+## gameplay.gd reads it, so a later normal play-from-song-select doesn't
+## accidentally reuse a stale playtest chart.
+var pending_chart: Chart = null
+var pending_audio_stream: AudioStream = null
+
+
+## Returns and clears pending_chart.
+func take_pending_chart() -> Chart:
+	var chart := pending_chart
+	pending_chart = null
+	return chart
+
+
+## Returns and clears pending_audio_stream.
+func take_pending_audio_stream() -> AudioStream:
+	var stream := pending_audio_stream
+	pending_audio_stream = null
+	return stream
+
 
 ## Path of the chart selected for the *next* play, or "" if none/out of range.
 func current_chart_path() -> String:

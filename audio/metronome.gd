@@ -39,15 +39,7 @@ static func build(
 
 	for beat in total_beats:
 		var beat_start_frame := int(round(beat * beat_sec * sample_rate))
-		for i in click_frames:
-			var frame := beat_start_frame + i
-			if frame >= total_frames:
-				break
-			var t := float(i) / sample_rate
-			var envelope := 1.0 - (float(i) / click_frames)
-			var sample := sin(TAU * CLICK_FREQ_HZ * t) * envelope
-			var sample_i16 := int(clampf(sample * 32767.0, -32768.0, 32767.0))
-			data.encode_s16(frame * 2, sample_i16)
+		_render_click(data, beat_start_frame, click_frames, sample_rate)
 
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
@@ -55,6 +47,41 @@ static func build(
 	stream.stereo = false
 	stream.data = data
 	return stream
+
+
+## Builds a single short click (no silence, no beat loop) -- used by the
+## editor's metronome toggle (§3.6), which layers one click per detected
+## beat crossing over whatever audio is already playing, rather than
+## generating a whole separate click track.
+static func build_single_click(sample_rate: int = SAMPLE_RATE) -> AudioStreamWAV:
+	var click_frames := int(round(CLICK_DURATION_SEC * sample_rate))
+	var data := PackedByteArray()
+	data.resize(click_frames * 2)
+	_render_click(data, 0, click_frames, sample_rate)
+
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = sample_rate
+	stream.stereo = false
+	stream.data = data
+	return stream
+
+
+## Writes one decaying sine click into [param data] (raw 16-bit mono PCM)
+## starting at [param start_frame], [param click_frames] long, clipped to
+## data's bounds. Shared by build() (one call per beat) and
+## build_single_click() (one call, start_frame 0).
+static func _render_click(data: PackedByteArray, start_frame: int, click_frames: int, sample_rate: int) -> void:
+	var total_frames := data.size() / 2
+	for i in click_frames:
+		var frame := start_frame + i
+		if frame >= total_frames:
+			break
+		var t := float(i) / sample_rate
+		var envelope := 1.0 - (float(i) / click_frames)
+		var sample := sin(TAU * CLICK_FREQ_HZ * t) * envelope
+		var sample_i16 := int(clampf(sample * 32767.0, -32768.0, 32767.0))
+		data.encode_s16(frame * 2, sample_i16)
 
 
 ## Target song time (ms) of the given zero-indexed beat, at [param bpm] --
