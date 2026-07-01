@@ -1,0 +1,132 @@
+[gd_resource type="Theme" load_steps=8 format=3]
+
+[ext_resource type="SystemFont" path="res://assets/fonts/font_ui.tres" id="1"]
+
+; -----------------------------------------------------------------------
+; Octet theme — base Theme resource per docs/DESIGN_BRIEF.md §7.
+;
+; Literal hex values below are duplicated from core/design_tokens.gd
+; (Theme resources are parsed before autoloads exist, so they cannot
+; reference the DesignTokens singleton at load time). Keep these in sync
+; by hand if the palette changes:
+;   COLOR_SURFACE        #16131B -> Color(0.086275, 0.07451, 0.105882, 1)
+;   COLOR_SURFACE_RAISED  #1F1A26 -> Color(0.121569, 0.101961, 0.14902, 1)
+;   COLOR_HAIRLINE        #2A2431 -> Color(0.164706, 0.141176, 0.192157, 1)
+;   COLOR_TEXT_PRIMARY    #F5F1F5 -> Color(0.960784, 0.945098, 0.960784, 1)
+;   COLOR_TEXT_MUTED      #6E6676 -> Color(0.431373, 0.4, 0.462745, 1)
+;   COLOR_PINK            #FF2D6E -> Color(1, 0.176471, 0.431373, 1)
+;
+; Scope (Stage 0 foundation only): base font/font_size defaults, a Button
+; style, and a Panel/PanelContainer card style. Detailed HUD/editor theming
+; is later work (Stages 3-5) against imported mockups.
+; -----------------------------------------------------------------------
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
+bg_color = Color(0.121569, 0.101961, 0.14902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+bg_color = Color(0.121569, 0.101961, 0.14902, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_pressed"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_focus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_disabled"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel_card"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_right = 11
+corner_radius_bottom_left = 11
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+
+[resource]
+default_font = ExtResource("1")
+default_font_size = 16
+
+Button/styles/normal = SubResource("StyleBoxFlat_btn_normal")
+Button/styles/hover = SubResource("StyleBoxFlat_btn_hover")
+Button/styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+Button/styles/focus = SubResource("StyleBoxFlat_btn_focus")
+Button/styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+Button/colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+Button/colors/font_hover_color = Color(0.960784, 0.945098, 0.960784, 1)
+Button/colors/font_pressed_color = Color(0.960784, 0.945098, 0.960784, 1)
+Button/colors/font_focus_color = Color(0.960784, 0.945098, 0.960784, 1)
+Button/colors/font_disabled_color = Color(0.431373, 0.4, 0.462745, 1)
+
+Panel/styles/panel = SubResource("StyleBoxFlat_panel_card")
+PanelContainer/styles/panel = SubResource("StyleBoxFlat_panel_card")

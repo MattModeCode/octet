@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="GameplayConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/gameplay_config.gd" id="1_gmpcfg"]
+
+[resource]
+script = ExtResource("1_gmpcfg")
+window_perfect_ms = 25.0
+window_great_ms = 60.0
+window_good_ms = 110.0
+weight_perfect = 1.0
+weight_great = 0.66
+weight_good = 0.33
+weight_miss = 0.0
+health_delta_perfect = 1.0
+health_delta_great = 0.5
+health_delta_good = -1.0
+health_delta_miss = -6.0
+health_start = 100.0
+combo_multiplier_cap = 4.0
+combo_multiplier_step = 10
+hold_tick_interval_ms = 100.0
+grade_ss_threshold = 1.0
+grade_s_threshold = 0.95
+grade_a_threshold = 0.9
+grade_b_threshold = 0.8
+grade_c_threshold = 0.7

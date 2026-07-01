@@ -1,0 +1,25 @@
+{
+  "format_version": 1,
+  "metadata": {
+    "title": "M1a fixture",
+    "artist": "Octet",
+    "mapper": "Stage 2",
+    "difficulty_name": "Normal",
+    "star_rating": 1.0,
+    "tags": ["fixture", "stage2"],
+    "preview_time_ms": 1000
+  },
+  "audio": {
+    "filename": "click.wav",
+    "duration_ms": 4000
+  },
+  "timing_points": [
+    { "time_ms": 0, "bpm": 120.0, "meter": 4 }
+  ],
+  "notes": [
+    { "lane": 0, "time_ms": 1000, "type": "tap" },
+    { "lane": 4, "time_ms": 1000, "type": "tap" },
+    { "lane": 2, "time_ms": 1500, "type": "tap" },
+    { "lane": 3, "time_ms": 2000, "type": "hold", "end_time_ms": 2250 }
+  ]
+}

@@ -1,0 +1,97 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/gameplay.gd" id="1_gameplaygd"]
+[ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
+
+[node name="Gameplay" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_gameplaygd")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047, 0.039, 0.059, 1)
+
+[node name="LanesContainer" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="JudgmentLine" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_top = 880.0
+offset_bottom = 886.0
+offset_right = 1920.0
+color = Color(0.960784, 0.945098, 0.960784, 1)
+
+[node name="Hud" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 40.0
+offset_right = 500.0
+offset_bottom = 260.0
+theme_override_constants/separation = 8
+
+[node name="ScoreLabel" type="Label" parent="Hud"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Score: 0"
+
+[node name="ComboLabel" type="Label" parent="Hud"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Combo: 0  (x1)"
+
+[node name="AccuracyLabel" type="Label" parent="Hud"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Accuracy: 100.00%"
+
+[node name="HealthLabel" type="Label" parent="Hud"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Health: 100"
+
+[node name="GradeLabel" type="Label" parent="Hud"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Grade: SS"
+
+[node name="QuitButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 1760.0
+offset_top = 40.0
+offset_right = 1880.0
+offset_bottom = 76.0
+text = "Quit"
+
+[node name="HelpLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 1000.0
+offset_right = 1200.0
+offset_bottom = 1032.0
+theme_override_font_sizes/font_size = 16
+text = "Lanes: A S D F J K L ;"

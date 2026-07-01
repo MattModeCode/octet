@@ -1,0 +1,171 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://editor/editor_main.gd" id="1_editormaingd"]
+[ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://editor/waveform_view.gd" id="3_waveformgd"]
+
+[node name="EditorMain" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_editormaingd")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047, 0.039, 0.059, 1)
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 24.0
+offset_right = 600.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 28
+text = "Editor"
+
+[node name="WaveformPanel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 70.0
+offset_right = 1880.0
+offset_bottom = 270.0
+
+[node name="WaveformView" type="Control" parent="WaveformPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+script = ExtResource("3_waveformgd")
+
+[node name="TransportRow" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 284.0
+offset_right = 1000.0
+offset_bottom = 320.0
+theme_override_constants/separation = 16
+
+[node name="ImportButton" type="Button" parent="TransportRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(140, 0)
+text = "Import audio"
+
+[node name="PlayButton" type="Button" parent="TransportRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+text = "Play"
+
+[node name="StopButton" type="Button" parent="TransportRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+text = "Stop"
+
+[node name="RateLabel" type="Label" parent="TransportRow"]
+layout_mode = 2
+text = "Rate:"
+vertical_alignment = 1
+
+[node name="RateOption" type="OptionButton" parent="TransportRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="TimeLabel" type="Label" parent="TransportRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "0 ms"
+vertical_alignment = 1
+
+[node name="TimingRow" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 340.0
+offset_right = 1000.0
+offset_bottom = 376.0
+theme_override_constants/separation = 16
+
+[node name="BpmLabel" type="Label" parent="TimingRow"]
+layout_mode = 2
+text = "BPM:"
+vertical_alignment = 1
+
+[node name="BpmSpinBox" type="SpinBox" parent="TimingRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+min_value = 20.0
+max_value = 400.0
+step = 0.1
+value = 120.0
+
+[node name="OffsetLabel" type="Label" parent="TimingRow"]
+layout_mode = 2
+text = "Offset (ms):"
+vertical_alignment = 1
+
+[node name="OffsetSpinBox" type="SpinBox" parent="TimingRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(140, 0)
+min_value = 0.0
+max_value = 600000.0
+step = 1.0
+value = 0.0
+
+[node name="AddTimingPointButton" type="Button" parent="TimingRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+text = "Add timing point at playhead"
+
+[node name="TimingPointsScroll" type="ScrollContainer" parent="."]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 400.0
+offset_right = 1000.0
+offset_bottom = 600.0
+
+[node name="TimingPointsList" type="VBoxContainer" parent="TimingPointsScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="StatusLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 40.0
+offset_top = 1000.0
+offset_right = 1880.0
+offset_bottom = 1032.0
+theme_override_font_sizes/font_size = 16
+text = ""
+
+[node name="BackButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 1760.0
+offset_top = 24.0
+offset_right = 1880.0
+offset_bottom = 60.0
+text = "Back"
+
+[node name="FileDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Import audio"
+size = Vector2i(900, 600)
+access = 2
+file_mode = 0
+filters = PackedStringArray("*.wav ; WAV audio", "*.ogg, *.oga ; OGG Vorbis audio", "*.mp3 ; MP3 audio")

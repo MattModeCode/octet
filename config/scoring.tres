@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ScoringConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/scoring_config.gd" id="1_scrcfg"]
+
+[resource]
+script = ExtResource("1_scrcfg")
+base_note_score = 300
+star_density_weight = 1.0
+star_chord_hold_complexity_weight = 1.0
+star_pattern_speed_weight = 1.0
