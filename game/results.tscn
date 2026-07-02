@@ -1,7 +1,92 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://game/results.gd" id="1_resultsgd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://ui/radial_background.tscn" id="3_radialbg"]
+[ext_resource type="SystemFont" path="res://assets/fonts/font_display.tres" id="4_fontdisplay"]
+[ext_resource type="SystemFont" path="res://assets/fonts/font_mono.tres" id="5_fontmono"]
+
+; -----------------------------------------------------------------------
+; Results, imported from "Octet - Results.dc.html" (docs/DESIGN_HANDOFF.md).
+; Colours baked as literal DesignTokens values -- .tscn parses before
+; autoloads exist, same documented exception as game/gameplay.tscn:
+;   COLOR_INK             #0C0A0F -> Color(0.047, 0.039, 0.059, 1)
+;   COLOR_SURFACE         #16131B -> Color(0.086275, 0.07451, 0.105882, 1)
+;   COLOR_SURFACE_RAISED  #1F1A26 -> Color(0.121569, 0.101961, 0.14902, 1)
+;   COLOR_HAIRLINE        #2A2431 -> Color(0.164706, 0.141176, 0.192157, 1)
+;   COLOR_TEXT_PRIMARY    #F5F1F5 -> Color(0.960784, 0.945098, 0.960784, 1)
+;   COLOR_TEXT_SECONDARY  #A79FAE -> Color(0.654902, 0.623529, 0.682353, 1)
+;   COLOR_TEXT_MUTED      #6E6676 -> Color(0.431373, 0.4, 0.462745, 1)
+;   COLOR_PINK            #FF2D6E -> Color(1, 0.176471, 0.431373, 1)
+;   COLOR_AMBER           #FFC93C -> Color(1, 0.788235, 0.235294, 1)
+;   COLOR_PERFECT_FLASH   #FFF4D6 -> Color(1, 0.956863, 0.839216, 1)
+;   COLOR_MISS             #4A444F -> Color(0.290196, 0.266667, 0.309804, 1)
+;
+; Per-judgment breakdown bars and the hit-timing histogram are built by
+; results.gd since they're data-driven (Judgment counts / hit_errors); the
+; grade/stats/card skeleton below is static per the mockup. No "NEW BEST"
+; badge (no score-persistence layer to compare against yet, per CLAUDE.md's
+; rule against faking data).
+; -----------------------------------------------------------------------
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_histogram_card"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+content_margin_left = 32.0
+content_margin_top = 24.0
+content_margin_right = 32.0
+content_margin_bottom = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_back_button"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 24.0
+content_margin_top = 18.0
+content_margin_right = 24.0
+content_margin_bottom = 18.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_retry_button"]
+bg_color = Color(0.121569, 0.101961, 0.14902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 24.0
+content_margin_top = 18.0
+content_margin_right = 24.0
+content_margin_bottom = 18.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_next_button"]
+bg_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 24.0
+content_margin_top = 18.0
+content_margin_right = 24.0
+content_margin_bottom = 18.0
 
 [node name="Results" type="Control"]
 layout_mode = 3
@@ -13,119 +98,241 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_resultsgd")
 
-[node name="Background" type="ColorRect" parent="."]
-unique_name_in_owner = true
+[node name="RadialBackground" parent="." instance=ExtResource("3_radialbg")]
+layout_mode = 1
+glow_center = Vector2(0.5, 0.0)
+glow_extent = Vector2(0.6, 0.55)
+
+[node name="RootVBox" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.047, 0.039, 0.059, 1)
-
-[node name="CenterContainer" type="CenterContainer" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
-layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 0
 alignment = 1
 
-[node name="GradeLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="TopSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+
+[node name="OverlineLabel" type="Label" parent="RootVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 96
-text = "SS"
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+text = "—"
 horizontal_alignment = 1
 
-[node name="AccuracyLabel" type="Label" parent="CenterContainer/VBoxContainer"]
-unique_name_in_owner = true
+[node name="MidSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="GradeStatsRow" type="HBoxContainer" parent="RootVBox"]
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 28
-text = "Accuracy: 100.00%"
+theme_override_constants/separation = 80
+
+[node name="GradeBlock" type="VBoxContainer" parent="RootVBox/GradeStatsRow"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="GradeLabel" type="Label" parent="RootVBox/GradeStatsRow/GradeBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 220
+theme_override_colors/font_color = Color(1, 0.788235, 0.235294, 1)
+theme_override_colors/font_outline_color = Color(1, 0.788235, 0.235294, 0.35)
+theme_override_constants/outline_size = 16
+text = "—"
 horizontal_alignment = 1
 
-[node name="ComboLabel" type="Label" parent="CenterContainer/VBoxContainer"]
-unique_name_in_owner = true
+[node name="StatsBlock" type="VBoxContainer" parent="RootVBox/GradeStatsRow"]
 layout_mode = 2
-size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 22
-text = "Max combo: 0"
-horizontal_alignment = 1
+size_flags_vertical = 4
+theme_override_constants/separation = 22
 
-[node name="ScoreLabel" type="Label" parent="CenterContainer/VBoxContainer"]
-unique_name_in_owner = true
+[node name="StatsRow" type="HBoxContainer" parent="RootVBox/GradeStatsRow/StatsBlock"]
 layout_mode = 2
-size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 22
-text = "Score: 0"
-horizontal_alignment = 1
+theme_override_constants/separation = 56
 
-[node name="BreakdownLabel" type="Label" parent="CenterContainer/VBoxContainer"]
-unique_name_in_owner = true
+[node name="ScoreBlock" type="VBoxContainer" parent="RootVBox/GradeStatsRow/StatsBlock/StatsRow"]
 layout_mode = 2
-size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 18
-text = "Perfect: 0   Great: 0   Good: 0   Miss: 0"
-horizontal_alignment = 1
+theme_override_constants/separation = 2
 
-[node name="BadgesLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="ScoreOverline" type="Label" parent="RootVBox/GradeStatsRow/StatsBlock/StatsRow/ScoreBlock"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "SCORE"
+
+[node name="ScoreValue" type="Label" parent="RootVBox/GradeStatsRow/StatsBlock/StatsRow/ScoreBlock"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 18
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 46
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "0"
+
+[node name="AccuracyBlock" type="VBoxContainer" parent="RootVBox/GradeStatsRow/StatsBlock/StatsRow"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="AccuracyOverline" type="Label" parent="RootVBox/GradeStatsRow/StatsBlock/StatsRow/AccuracyBlock"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "ACCURACY"
+
+[node name="AccuracyValue" type="Label" parent="RootVBox/GradeStatsRow/StatsBlock/StatsRow/AccuracyBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 46
+theme_override_colors/font_color = Color(1, 0.788235, 0.235294, 1)
+text = "0.00%"
+
+[node name="ComboBlock" type="VBoxContainer" parent="RootVBox/GradeStatsRow/StatsBlock/StatsRow"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="ComboOverline" type="Label" parent="RootVBox/GradeStatsRow/StatsBlock/StatsRow/ComboBlock"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "MAX COMBO"
+
+[node name="ComboValue" type="Label" parent="RootVBox/GradeStatsRow/StatsBlock/StatsRow/ComboBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 46
+theme_override_colors/font_color = Color(1, 0.176471, 0.431373, 1)
+text = "0x"
+
+[node name="BreakdownBlock" type="VBoxContainer" parent="RootVBox/GradeStatsRow/StatsBlock"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(640, 0)
+layout_mode = 2
+theme_override_constants/separation = 9
+
+[node name="BadgesLabel" type="Label" parent="RootVBox/GradeStatsRow/StatsBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(1, 0.176471, 0.431373, 1)
 text = ""
-horizontal_alignment = 1
 
-[node name="HistogramTitle" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="HistogramSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+
+[node name="HistogramCard" type="PanelContainer" parent="RootVBox"]
+custom_minimum_size = Vector2(900, 0)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 16
-text = "Early                    Hit-error distribution                    Late"
-horizontal_alignment = 1
+theme_override_styles/panel = SubResource("StyleBoxFlat_histogram_card")
 
-[node name="HistogramContainer" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+[node name="HistogramVBox" type="VBoxContainer" parent="RootVBox/HistogramCard"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="HistogramHeaderRow" type="HBoxContainer" parent="RootVBox/HistogramCard/HistogramVBox"]
+layout_mode = 2
+
+[node name="HistogramTitleLabel" type="Label" parent="RootVBox/HistogramCard/HistogramVBox/HistogramHeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "Hit timing"
+
+[node name="OffsetLabel" type="Label" parent="RootVBox/HistogramCard/HistogramVBox/HistogramHeaderRow"]
 unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+text = "avg offset —"
+
+[node name="HistogramBody" type="VBoxContainer" parent="RootVBox/HistogramCard/HistogramVBox"]
+custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HistogramContainer" type="HBoxContainer" parent="RootVBox/HistogramCard/HistogramVBox/HistogramBody"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 alignment = 1
 theme_override_constants/separation = 6
 
-[node name="OffsetLabel" type="Label" parent="CenterContainer/VBoxContainer"]
-unique_name_in_owner = true
+[node name="HistogramLabelsRow" type="HBoxContainer" parent="RootVBox/HistogramCard/HistogramVBox/HistogramBody"]
 layout_mode = 2
-size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 16
-text = "Mean offset: 0.0 ms on time"
-horizontal_alignment = 1
 
-[node name="ActionsRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+[node name="EarlyLabel" type="Label" parent="RootVBox/HistogramCard/HistogramVBox/HistogramBody/HistogramLabelsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "EARLY"
+
+[node name="LateLabel" type="Label" parent="RootVBox/HistogramCard/HistogramVBox/HistogramBody/HistogramLabelsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "LATE"
+horizontal_alignment = 2
+
+[node name="BottomSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ActionsRow" type="HBoxContainer" parent="RootVBox"]
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_constants/separation = 16
-alignment = 1
 
-[node name="RetryButton" type="Button" parent="CenterContainer/VBoxContainer/ActionsRow"]
+[node name="BackButton" type="Button" parent="RootVBox/ActionsRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
-custom_minimum_size = Vector2(160, 0)
+theme_override_styles/normal = SubResource("StyleBoxFlat_back_button")
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "Back"
+
+[node name="RetryButton" type="Button" parent="RootVBox/ActionsRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_retry_button")
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(1, 0.176471, 0.431373, 1)
 text = "Retry"
 
-[node name="NextButton" type="Button" parent="CenterContainer/VBoxContainer/ActionsRow"]
+[node name="NextButton" type="Button" parent="RootVBox/ActionsRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
-custom_minimum_size = Vector2(160, 0)
-text = "Next"
-
-[node name="BackButton" type="Button" parent="CenterContainer/VBoxContainer/ActionsRow"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(220, 0)
-text = "Back to song select"
+theme_override_styles/normal = SubResource("StyleBoxFlat_next_button")
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(0.047, 0.039, 0.059, 1)
+text = "Next song"

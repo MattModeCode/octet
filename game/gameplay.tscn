@@ -1,7 +1,79 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://game/gameplay.gd" id="1_gameplaygd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://game/playfield_view.gd" id="3_playfieldviewgd"]
+[ext_resource type="SystemFont" path="res://assets/fonts/font_mono.tres" id="4_fontmono"]
+[ext_resource type="SystemFont" path="res://assets/fonts/font_display.tres" id="5_fontdisplay"]
+[ext_resource type="PackedScene" path="res://ui/radial_background.tscn" id="6_radialbg"]
+
+; -----------------------------------------------------------------------
+; 1a "Classic centered" gameplay HUD, imported from
+; "Octet - Gameplay HUD.dc.html" (docs/DESIGN_HANDOFF.md). Colours below
+; are literal DesignTokens values baked in -- Resource files (.tscn/.tres)
+; are parsed before autoloads exist, so they can't reference the
+; DesignTokens singleton at load time (same documented exception as
+; assets/theme/octet_theme.tres). Keep in sync by hand if the palette
+; changes:
+;   COLOR_INK             #0C0A0F -> Color(0.047, 0.039, 0.059, 1)
+;   COLOR_SURFACE_RAISED  #1F1A26 -> Color(0.121569, 0.101961, 0.14902, 1)
+;   COLOR_HAIRLINE        #2A2431 -> Color(0.164706, 0.141176, 0.192157, 1)
+;   COLOR_TEXT_PRIMARY    #F5F1F5 -> Color(0.960784, 0.945098, 0.960784, 1)
+;   COLOR_TEXT_SECONDARY  #A79FAE -> Color(0.654902, 0.623529, 0.682353, 1)
+;   COLOR_TEXT_MUTED      #6E6676 -> Color(0.431373, 0.4, 0.462745, 1)
+;   COLOR_PINK            #FF2D6E -> Color(1, 0.176471, 0.431373, 1)
+;   COLOR_AMBER           #FFC93C -> Color(1, 0.788235, 0.235294, 1)
+;   COLOR_DANGER          #FF3B3B -> Color(1, 0.231373, 0.231373, 1)
+;
+; Fidelity-pass note (CLAUDE.md design-fidelity rule): the background radial
+; glow + breathing vignette and the health bar's rounded pink->amber
+; gradient fill were previously cut as "decorative" -- both restored here.
+; Known remaining deviation: the health fill has no box-shadow glow (no
+; cheap Godot Control equivalent at this 8px scale) and its square-cornered
+; TextureRect can show a hairline-scale sliver past the track's rounded
+; end-caps (Godot StyleBoxFlat corner rounding isn't a true clip mask).
+; -----------------------------------------------------------------------
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pill"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.788235, 0.235294, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+content_margin_left = 10.0
+content_margin_top = 3.0
+content_margin_right = 10.0
+content_margin_bottom = 3.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_track"]
+bg_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_bg"]
+bg_color = Color(0.121569, 0.101961, 0.14902, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="Gradient" id="Gradient_health_fill"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(1, 0.176471, 0.431373, 1, 1, 0.788235, 0.235294, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_health_fill"]
+gradient = SubResource("Gradient_health_fill")
+width = 640
+height = 8
+fill_from = Vector2(0, 0.5)
+fill_to = Vector2(1, 0.5)
 
 [node name="Gameplay" type="Control"]
 layout_mode = 3
@@ -13,85 +85,196 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_gameplaygd")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="RadialBackground" parent="." instance=ExtResource("6_radialbg")]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.047, 0.039, 0.059, 1)
+glow_center = Vector2(0.5, 0.0)
+glow_extent = Vector2(0.6, 0.55)
+vignette_center = Vector2(0.5, 1.0)
+vignette_extent = Vector2(0.4, 0.6)
 
-[node name="LanesContainer" type="Control" parent="."]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="JudgmentLine" type="ColorRect" parent="."]
-unique_name_in_owner = true
+[node name="TopLeftBlock" type="VBoxContainer" parent="."]
 layout_mode = 0
-offset_top = 880.0
-offset_bottom = 886.0
-offset_right = 1920.0
-color = Color(0.960784, 0.945098, 0.960784, 1)
-
-[node name="Hud" type="VBoxContainer" parent="."]
-layout_mode = 0
-offset_left = 40.0
+offset_left = 48.0
 offset_top = 40.0
-offset_right = 500.0
+offset_right = 600.0
+offset_bottom = 140.0
+theme_override_constants/separation = 6
+
+[node name="TitleLabel" type="Label" parent="TopLeftBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontdisplay")
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "Untitled"
+
+[node name="ArtistRow" type="HBoxContainer" parent="TopLeftBlock"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ArtistLabel" type="Label" parent="TopLeftBlock/ArtistRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+text = "Unknown artist"
+
+[node name="DifficultyPill" type="PanelContainer" parent="TopLeftBlock/ArtistRow"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
+
+[node name="DifficultyPillLabel" type="Label" parent="TopLeftBlock/ArtistRow/DifficultyPill"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(1, 0.788235, 0.235294, 1)
+text = "— · 0.0★"
+
+[node name="ScoreBlock" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 30.0
+offset_right = 300.0
+offset_bottom = 140.0
+grow_horizontal = 2
+theme_override_constants/separation = 2
+
+[node name="ScoreOverline" type="Label" parent="ScoreBlock"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "SCORE"
+
+[node name="ScoreValueLabel" type="Label" parent="ScoreBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 44
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "0"
+
+[node name="AccComboBlock" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -260.0
+offset_top = 26.0
+offset_right = -48.0
+offset_bottom = 180.0
+grow_horizontal = 0
+theme_override_constants/separation = 4
+
+[node name="AccOverline" type="Label" parent="AccComboBlock"]
+layout_mode = 2
+horizontal_alignment = 2
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "ACC"
+
+[node name="AccuracyValueLabel" type="Label" parent="AccComboBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 2
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 0.788235, 0.235294, 1)
+text = "100.00%"
+
+[node name="ComboOverline" type="Label" parent="AccComboBlock"]
+layout_mode = 2
+horizontal_alignment = 2
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "COMBO"
+
+[node name="ComboValueLabel" type="Label" parent="AccComboBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 2
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 40
+theme_override_colors/font_color = Color(1, 0.176471, 0.431373, 1)
+text = "0x"
+
+[node name="HealthBarTrack" type="Panel" parent="."]
+layout_mode = 0
+offset_left = 640.0
+offset_top = 132.0
+offset_right = 1280.0
+offset_bottom = 142.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_health_track")
+
+[node name="HealthBarBackground" type="Panel" parent="HealthBarTrack"]
+layout_mode = 0
+offset_left = 1.0
+offset_top = 1.0
+offset_right = 639.0
+offset_bottom = 9.0
+clip_contents = true
+theme_override_styles/panel = SubResource("StyleBoxFlat_health_bg")
+
+[node name="HealthBarFill" type="TextureRect" parent="HealthBarTrack/HealthBarBackground"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 638.0
+offset_bottom = 8.0
+texture = SubResource("GradientTexture2D_health_fill")
+
+[node name="PlayfieldView" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 640.0
+offset_top = 170.0
+offset_right = 1280.0
+offset_bottom = 1080.0
+script = ExtResource("3_playfieldviewgd")
+
+[node name="ReducedFlashLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 24.0
+offset_top = 1042.0
+offset_right = 400.0
+offset_bottom = 1060.0
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "REDUCED FLASH: OFF"
+
+[node name="FailedLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -260.0
+offset_top = 210.0
+offset_right = 260.0
 offset_bottom = 260.0
-theme_override_constants/separation = 8
-
-[node name="ScoreLabel" type="Label" parent="Hud"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Score: 0"
-
-[node name="ComboLabel" type="Label" parent="Hud"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Combo: 0  (x1)"
-
-[node name="AccuracyLabel" type="Label" parent="Hud"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Accuracy: 100.00%"
-
-[node name="HealthLabel" type="Label" parent="Hud"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Health: 100"
-
-[node name="GradeLabel" type="Label" parent="Hud"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Grade: SS"
+grow_horizontal = 2
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("5_fontdisplay")
+theme_override_font_sizes/font_size = 30
+theme_override_colors/font_color = Color(1, 0.231373, 0.231373, 1)
+text = "SONG FAILED"
 
 [node name="QuitButton" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 1760.0
-offset_top = 40.0
-offset_right = 1880.0
-offset_bottom = 76.0
+offset_left = 1780.0
+offset_top = 1016.0
+offset_right = 1896.0
+offset_bottom = 1060.0
 text = "Quit"
-
-[node name="HelpLabel" type="Label" parent="."]
-layout_mode = 0
-offset_left = 40.0
-offset_top = 1000.0
-offset_right = 1200.0
-offset_bottom = 1032.0
-theme_override_font_sizes/font_size = 16
-text = "Lanes: A S D F J K L ;"

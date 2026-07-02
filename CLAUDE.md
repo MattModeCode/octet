@@ -17,6 +17,7 @@ The Obsidian vault is the read-only source of truth for context, notes, and deci
 - **Autonomous.** Confirm the plan and scope on anything large, then proceed without hand-holding. Ask a clarifying question only when genuinely blocked — not to hedge.
 - **Canadian spelling**, sentence case for headings and labels.
 - **Design system is `docs/DESIGN_BRIEF.md`** — Octet's own palette and type. This project does **not** use the MashuAI brand. Never guess at colours or layout; apply the brief.
+- **Design fidelity — always work from the Claude design mockup.** Any UI/visual change must be checked against the corresponding mockup re-fetched live from the Claude Design MCP (project `cc6f9e35-9183-4b42-8d8a-be6dfc135fe1`; use `DesignSync.get_project`/`list_files`/`get_file` against that specific project ID — `list_projects` alone returns empty for it, since it's scoped to design-system-type projects and this is a regular project). Never implement or "match" a mockup from memory, a prose summary, or baked constants alone — always re-fetch first. Screens must look **exactly** like the sketches. If an element genuinely cannot or should not be implemented as designed, flag the deviation explicitly and get it confirmed — never silently cut or approximate it.
 - Keep tunables (timing windows, health deltas, star-rating, offsets) in config, not scattered through code.
 
 ## 3. The self-improvement loop

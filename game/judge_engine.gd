@@ -23,7 +23,16 @@ extends RefCounted
 ## (score 0, no combo/health effect, but they do count toward accuracy's
 ## denominator).
 
-signal judged(lane: int, kind: Judgment.Kind, error_ms: float)
+## [param affects_combo] mirrors the internal flag of the same name below --
+## true for a real discrete note event (head/tail press or release,
+## including auto/forfeited Misses), false for hold-tick credit or
+## truncated-remaining-tick entries. Added for the Stage 6 HUD-import
+## (docs/DESIGN_HANDOFF.md 1a) so gameplay.gd can pop a judgment
+## popup/hit-burst per real hit without also firing one every
+## hold_tick_interval_ms while a hold is held -- purely additive, does not
+## change any scoring/health/combo math. Only game/gameplay.gd connects to
+## this signal (verified project-wide before extending it).
+signal judged(lane: int, kind: Judgment.Kind, error_ms: float, affects_combo: bool)
 signal combo_changed(combo: int)
 signal health_changed(health: float)
 signal song_failed()
@@ -256,4 +265,4 @@ func _apply_judgment(lane: int, kind: Judgment.Kind, signed_error_ms, affects_co
 			_failed = true
 			song_failed.emit()
 
-	judged.emit(lane, kind, signed_error_ms if signed_error_ms != null else 0.0)
+	judged.emit(lane, kind, signed_error_ms if signed_error_ms != null else 0.0, affects_combo)
