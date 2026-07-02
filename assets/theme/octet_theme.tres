@@ -1,6 +1,6 @@
 [gd_resource type="Theme" load_steps=8 format=3]
 
-[ext_resource type="SystemFont" path="res://assets/fonts/font_ui.tres" id="1"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_ui.tres" id="1"]
 
 ; -----------------------------------------------------------------------
 ; Octet theme — base Theme resource per docs/DESIGN_BRIEF.md §7.

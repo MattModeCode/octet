@@ -2,9 +2,9 @@
 
 [ext_resource type="Script" path="res://game/song_select.gd" id="1_songselectgd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
-[ext_resource type="SystemFont" path="res://assets/fonts/font_display.tres" id="3_fontdisplay"]
-[ext_resource type="SystemFont" path="res://assets/fonts/font_mono.tres" id="4_fontmono"]
-[ext_resource type="SystemFont" path="res://assets/fonts/font_ui.tres" id="5_fontui"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_display.tres" id="3_fontdisplay"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono.tres" id="4_fontmono"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_ui.tres" id="5_fontui"]
 
 ; -----------------------------------------------------------------------
 ; Song select, imported from "Octet - Song Select.dc.html"

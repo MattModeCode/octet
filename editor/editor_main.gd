@@ -837,3 +837,19 @@ func _refresh_notes() -> void:
 
 func _apply_colours() -> void:
 	_background.color = DesignTokens.COLOR_INK
+	_style_transport_buttons()
+
+
+## Fidelity-pass fix (CLAUDE.md design-fidelity rule, re-audited against the
+## real "Octet - Editor.dc.html" 2a layout): the top bar's Play/Stop
+## transport controls were plain default-theme text buttons; the mockup
+## draws them as the same 34px rounded icon-squares used everywhere else in
+## 2a's top bar (Play filled pink, Stop dark-bordered), matching the same
+## visual language _tool_style() already establishes for the tool rail.
+func _style_transport_buttons() -> void:
+	for button in [_play_button, _stop_button]:
+		button.custom_minimum_size = Vector2(48, 34)
+		button.add_theme_stylebox_override("normal", _tool_style(button == _play_button))
+		button.add_theme_stylebox_override("hover", _tool_style(button == _play_button))
+		button.add_theme_stylebox_override("pressed", _tool_style(button == _play_button))
+		button.add_theme_color_override("font_color", DesignTokens.COLOR_INK if button == _play_button else DesignTokens.COLOR_TEXT_PRIMARY)

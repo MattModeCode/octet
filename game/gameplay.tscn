@@ -3,8 +3,8 @@
 [ext_resource type="Script" path="res://game/gameplay.gd" id="1_gameplaygd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
 [ext_resource type="Script" path="res://game/playfield_view.gd" id="3_playfieldviewgd"]
-[ext_resource type="SystemFont" path="res://assets/fonts/font_mono.tres" id="4_fontmono"]
-[ext_resource type="SystemFont" path="res://assets/fonts/font_display.tres" id="5_fontdisplay"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono.tres" id="4_fontmono"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_display.tres" id="5_fontdisplay"]
 [ext_resource type="PackedScene" path="res://ui/radial_background.tscn" id="6_radialbg"]
 
 ; -----------------------------------------------------------------------

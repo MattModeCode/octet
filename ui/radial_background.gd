@@ -57,10 +57,16 @@ func _ready() -> void:
 
 func _build_radial_texture(center: Vector2, extent: Vector2, near_color: Color, far_color: Color, far_offset: float) -> GradientTexture2D:
 	var gradient := Gradient.new()
-	gradient.set_color(0, near_color)
-	gradient.add_point(far_offset, far_color)
+	## Gradient.new() seeds two default points (black@0.0, white@1.0);
+	## set_color()/add_point() alone leave that default white point at 1.0
+	## in place, so the outer edge silently fades to white instead of
+	## far_color. Replace both arrays wholesale to avoid it.
 	if far_offset < 1.0:
-		gradient.add_point(1.0, far_color)
+		gradient.offsets = PackedFloat32Array([0.0, far_offset, 1.0])
+		gradient.colors = PackedColorArray([near_color, far_color, far_color])
+	else:
+		gradient.offsets = PackedFloat32Array([0.0, 1.0])
+		gradient.colors = PackedColorArray([near_color, far_color])
 	var texture := GradientTexture2D.new()
 	texture.gradient = gradient
 	texture.width = TEXTURE_RESOLUTION

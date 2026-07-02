@@ -3,8 +3,8 @@
 [ext_resource type="Script" path="res://game/results.gd" id="1_resultsgd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
 [ext_resource type="PackedScene" path="res://ui/radial_background.tscn" id="3_radialbg"]
-[ext_resource type="SystemFont" path="res://assets/fonts/font_display.tres" id="4_fontdisplay"]
-[ext_resource type="SystemFont" path="res://assets/fonts/font_mono.tres" id="5_fontmono"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_display.tres" id="4_fontdisplay"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono.tres" id="5_fontmono"]
 
 ; -----------------------------------------------------------------------
 ; Results, imported from "Octet - Results.dc.html" (docs/DESIGN_HANDOFF.md).

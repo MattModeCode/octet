@@ -1,7 +1,139 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://audio/calibration.gd" id="1_calibrationgd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://ui/radial_background.tscn" id="3_radialbg"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_display.tres" id="4_fontdisplay"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono.tres" id="5_fontmono"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_ui.tres" id="6_fontui"]
+
+; -----------------------------------------------------------------------
+; Calibration, imported from "Octet - Calibration.dc.html"
+; (docs/DESIGN_HANDOFF.md). Colours baked as literal DesignTokens values --
+; .tscn parses before autoloads exist, same documented exception as
+; game/gameplay.tscn:
+;   COLOR_INK             #0C0A0F -> Color(0.047, 0.039, 0.059, 1)
+;   COLOR_SURFACE         #16131B -> Color(0.086275, 0.07451, 0.105882, 1)
+;   COLOR_SURFACE_RAISED  #1F1A26 -> Color(0.121569, 0.101961, 0.14902, 1)
+;   COLOR_HAIRLINE        #2A2431 -> Color(0.164706, 0.141176, 0.192157, 1)
+;   COLOR_TEXT_PRIMARY    #F5F1F5 -> Color(0.960784, 0.945098, 0.960784, 1)
+;   COLOR_TEXT_SECONDARY  #A79FAE -> Color(0.654902, 0.623529, 0.682353, 1)
+;   COLOR_TEXT_MUTED      #6E6676 -> Color(0.431373, 0.4, 0.462745, 1)
+;   COLOR_PINK            #FF2D6E -> Color(1, 0.176471, 0.431373, 1)
+;   COLOR_AMBER           #FFC93C -> Color(1, 0.788235, 0.235294, 1)
+;
+; Fidelity-pass note (CLAUDE.md design-fidelity rule): the mockup's ring
+; pulse/top-tick animation runs on a fixed CSS loop independent of the
+; sample "120 BPM" shown; here it's driven by the real beat instead (see
+; calibration.gd's _flash_pulse), which reads truer than mimicking a fixed
+; period unrelated to the actual metronome tempo. The mockup's sample
+; "AUDIO OFFSET -18ms" is not faked -- audio_offset_ms is shown as whatever
+; SettingsStore already has (0 by default; this routine only ever writes
+; input_offset_ms, per the documented confounded-measurement decision
+; below in calibration.gd).
+; -----------------------------------------------------------------------
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_offset_card"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+content_margin_left = 26.0
+content_margin_top = 22.0
+content_margin_right = 26.0
+content_margin_bottom = 22.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_offset_card_total"]
+bg_color = Color(0.121569, 0.101961, 0.14902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+content_margin_left = 26.0
+content_margin_top = 22.0
+content_margin_right = 26.0
+content_margin_bottom = 22.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_recalibrate_button"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 24.0
+content_margin_top = 18.0
+content_margin_right = 24.0
+content_margin_bottom = 18.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_save_button"]
+bg_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 24.0
+content_margin_top = 18.0
+content_margin_right = 24.0
+content_margin_bottom = 18.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ring_outer"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 210
+corner_radius_top_right = 210
+corner_radius_bottom_right = 210
+corner_radius_bottom_left = 210
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ring_inner"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 170
+corner_radius_top_right = 170
+corner_radius_bottom_right = 170
+corner_radius_bottom_left = 170
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_glow_pulse"]
+bg_color = Color(1, 0.176471, 0.431373, 0.35)
+corner_radius_top_left = 90
+corner_radius_top_right = 90
+corner_radius_bottom_right = 90
+corner_radius_bottom_left = 90
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_center_disc"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 60
+corner_radius_top_right = 60
+corner_radius_bottom_right = 60
+corner_radius_bottom_left = 60
 
 [node name="Calibration" type="Control"]
 layout_mode = 3
@@ -13,81 +145,286 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_calibrationgd")
 
-[node name="Background" type="ColorRect" parent="."]
-unique_name_in_owner = true
+[node name="RadialBackground" parent="." instance=ExtResource("3_radialbg")]
+layout_mode = 1
+glow_center = Vector2(0.5, 0.0)
+glow_extent = Vector2(0.6, 0.55)
+
+[node name="RootVBox" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.047, 0.039, 0.059, 1)
-
-[node name="CenterContainer" type="CenterContainer" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
-layout_mode = 2
-theme_override_constants/separation = 24
+theme_override_constants/separation = 0
 alignment = 1
 
-[node name="Title" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="TopSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="RootVBox"]
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 36
-text = "Calibration"
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 30
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "Calibrate your timing"
 horizontal_alignment = 1
 
-[node name="Instructions" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="SubtitleLabel" type="RichTextLabel" parent="RootVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 16
-text = "Tap Space or Enter in time with the metronome. The first few beats are a warmup and aren't recorded."
-horizontal_alignment = 1
+theme_override_fonts/normal_font = ExtResource("6_fontui")
+theme_override_font_sizes/normal_font_size = 15
+theme_override_colors/default_color = Color(0.654902, 0.623529, 0.682353, 1)
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
 autowrap_mode = 3
 
-[node name="PulseIndicator" type="ColorRect" parent="CenterContainer/VBoxContainer"]
-unique_name_in_owner = true
+[node name="MetronomeSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+
+[node name="MetronomeVisual" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(420, 420)
 layout_mode = 2
 size_flags_horizontal = 4
-custom_minimum_size = Vector2(80, 80)
+
+[node name="OuterRing" type="Panel" parent="RootVBox/MetronomeVisual"]
+layout_mode = 0
+offset_right = 420.0
+offset_bottom = 420.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_ring_outer")
+
+[node name="InnerRing" type="Panel" parent="RootVBox/MetronomeVisual"]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 40.0
+offset_right = 380.0
+offset_bottom = 380.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_ring_inner")
+
+[node name="TopTick" type="ColorRect" parent="RootVBox/MetronomeVisual"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 208.0
+offset_top = 6.0
+offset_right = 212.0
+offset_bottom = 28.0
 color = Color(1, 0.176471, 0.431373, 1)
 
-[node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="BottomTick" type="ColorRect" parent="RootVBox/MetronomeVisual"]
+layout_mode = 0
+offset_left = 208.0
+offset_top = 392.0
+offset_right = 212.0
+offset_bottom = 414.0
+color = Color(0.164706, 0.141176, 0.192157, 1)
+
+[node name="LeftTick" type="ColorRect" parent="RootVBox/MetronomeVisual"]
+layout_mode = 0
+offset_left = 6.0
+offset_top = 208.0
+offset_right = 28.0
+offset_bottom = 212.0
+color = Color(0.164706, 0.141176, 0.192157, 1)
+
+[node name="RightTick" type="ColorRect" parent="RootVBox/MetronomeVisual"]
+layout_mode = 0
+offset_left = 392.0
+offset_top = 208.0
+offset_right = 414.0
+offset_bottom = 212.0
+color = Color(0.164706, 0.141176, 0.192157, 1)
+
+[node name="GlowPulse" type="Panel" parent="RootVBox/MetronomeVisual"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 120.0
+offset_top = 120.0
+offset_right = 300.0
+offset_bottom = 300.0
+pivot_offset = Vector2(90, 90)
+theme_override_styles/panel = SubResource("StyleBoxFlat_glow_pulse")
+
+[node name="CenterDisc" type="Panel" parent="RootVBox/MetronomeVisual"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 150.0
+offset_right = 270.0
+offset_bottom = 270.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_center_disc")
+
+[node name="BpmLabel" type="Label" parent="RootVBox/MetronomeVisual/CenterDisc"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "— BPM"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BeatSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+
+[node name="BeatLabel" type="Label" parent="RootVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 20
-text = ""
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "READY"
 horizontal_alignment = 1
 
-[node name="ResultLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="PipsSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+
+[node name="PipsRow" type="HBoxContainer" parent="RootVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 18
+theme_override_constants/separation = 8
+
+[node name="StatusLabel" type="Label" parent="RootVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_fonts/font = ExtResource("6_fontui")
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
 text = ""
 horizontal_alignment = 1
 
-[node name="ActionsRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+[node name="CardsSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+
+[node name="CardsRow" type="HBoxContainer" parent="RootVBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 24
+
+[node name="AudioCard" type="PanelContainer" parent="RootVBox/CardsRow"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_offset_card")
+
+[node name="AudioCardVBox" type="VBoxContainer" parent="RootVBox/CardsRow/AudioCard"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="AudioOverline" type="Label" parent="RootVBox/CardsRow/AudioCard/AudioCardVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "AUDIO OFFSET"
+horizontal_alignment = 1
+
+[node name="AudioValue" type="Label" parent="RootVBox/CardsRow/AudioCard/AudioCardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 34
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "0 ms"
+horizontal_alignment = 1
+
+[node name="InputCard" type="PanelContainer" parent="RootVBox/CardsRow"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_offset_card")
+
+[node name="InputCardVBox" type="VBoxContainer" parent="RootVBox/CardsRow/InputCard"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="InputOverline" type="Label" parent="RootVBox/CardsRow/InputCard/InputCardVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "INPUT OFFSET"
+horizontal_alignment = 1
+
+[node name="InputValue" type="Label" parent="RootVBox/CardsRow/InputCard/InputCardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 34
+theme_override_colors/font_color = Color(1, 0.788235, 0.235294, 1)
+text = "0 ms"
+horizontal_alignment = 1
+
+[node name="TotalCard" type="PanelContainer" parent="RootVBox/CardsRow"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_offset_card_total")
+
+[node name="TotalCardVBox" type="VBoxContainer" parent="RootVBox/CardsRow/TotalCard"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="TotalOverline" type="Label" parent="RootVBox/CardsRow/TotalCard/TotalCardVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "TOTAL OFFSET"
+horizontal_alignment = 1
+
+[node name="TotalValue" type="Label" parent="RootVBox/CardsRow/TotalCard/TotalCardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 34
+theme_override_colors/font_color = Color(1, 0.176471, 0.431373, 1)
+text = "0 ms"
+horizontal_alignment = 1
+
+[node name="BottomSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ActionsRow" type="HBoxContainer" parent="RootVBox"]
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_constants/separation = 16
-alignment = 1
 
-[node name="RecalibrateButton" type="Button" parent="CenterContainer/VBoxContainer/ActionsRow"]
+[node name="RecalibrateButton" type="Button" parent="RootVBox/ActionsRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-custom_minimum_size = Vector2(160, 0)
+theme_override_styles/normal = SubResource("StyleBoxFlat_recalibrate_button")
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
 text = "Recalibrate"
 
-[node name="DoneButton" type="Button" parent="CenterContainer/VBoxContainer/ActionsRow"]
+[node name="DoneButton" type="Button" parent="RootVBox/ActionsRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
-custom_minimum_size = Vector2(160, 0)
-text = "Done"
+theme_override_styles/normal = SubResource("StyleBoxFlat_save_button")
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.047, 0.039, 0.059, 1)
+text = "Save & continue"
