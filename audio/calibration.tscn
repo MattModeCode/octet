@@ -1,11 +1,12 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://audio/calibration.gd" id="1_calibrationgd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
 [ext_resource type="PackedScene" path="res://ui/radial_background.tscn" id="3_radialbg"]
 [ext_resource type="FontVariation" path="res://assets/fonts/font_display.tres" id="4_fontdisplay"]
-[ext_resource type="FontVariation" path="res://assets/fonts/font_mono.tres" id="5_fontmono"]
 [ext_resource type="FontVariation" path="res://assets/fonts/font_ui.tres" id="6_fontui"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono_bold.tres" id="7_fontmonobold"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono_overline.tres" id="8_fontmonooverline"]
 
 ; -----------------------------------------------------------------------
 ; Calibration, imported from "Octet - Calibration.dc.html"
@@ -173,6 +174,10 @@ theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
 text = "Calibrate your timing"
 horizontal_alignment = 1
 
+[node name="TitleSubtitleSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
 [node name="SubtitleLabel" type="RichTextLabel" parent="RootVBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 26)
@@ -268,7 +273,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_fonts/font = ExtResource("7_fontmonobold")
 theme_override_font_sizes/font_size = 15
 theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
 text = "— BPM"
@@ -283,7 +288,7 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_fonts/font = ExtResource("8_fontmonooverline")
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
 text = "READY"
@@ -330,7 +335,7 @@ alignment = 1
 
 [node name="AudioOverline" type="Label" parent="RootVBox/CardsRow/AudioCard/AudioCardVBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_fonts/font = ExtResource("8_fontmonooverline")
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
 text = "AUDIO OFFSET"
@@ -339,7 +344,7 @@ horizontal_alignment = 1
 [node name="AudioValue" type="Label" parent="RootVBox/CardsRow/AudioCard/AudioCardVBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_fonts/font = ExtResource("7_fontmonobold")
 theme_override_font_sizes/font_size = 34
 theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
 text = "0 ms"
@@ -357,7 +362,7 @@ alignment = 1
 
 [node name="InputOverline" type="Label" parent="RootVBox/CardsRow/InputCard/InputCardVBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_fonts/font = ExtResource("8_fontmonooverline")
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
 text = "INPUT OFFSET"
@@ -366,7 +371,7 @@ horizontal_alignment = 1
 [node name="InputValue" type="Label" parent="RootVBox/CardsRow/InputCard/InputCardVBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_fonts/font = ExtResource("7_fontmonobold")
 theme_override_font_sizes/font_size = 34
 theme_override_colors/font_color = Color(1, 0.788235, 0.235294, 1)
 text = "0 ms"
@@ -384,7 +389,7 @@ alignment = 1
 
 [node name="TotalOverline" type="Label" parent="RootVBox/CardsRow/TotalCard/TotalCardVBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_fonts/font = ExtResource("8_fontmonooverline")
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
 text = "TOTAL OFFSET"
@@ -393,7 +398,7 @@ horizontal_alignment = 1
 [node name="TotalValue" type="Label" parent="RootVBox/CardsRow/TotalCard/TotalCardVBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_fonts/font = ExtResource("7_fontmonobold")
 theme_override_font_sizes/font_size = 34
 theme_override_colors/font_color = Color(1, 0.176471, 0.431373, 1)
 text = "0 ms"

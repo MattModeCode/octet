@@ -9,6 +9,7 @@ extends PanelContainer
 ## (Stage 3, §2.8) without changing LaneInput's public API.
 
 @onready var _rows_container: VBoxContainer = %RowsContainer
+@onready var _back_button: Button = %BackButton
 
 var _capturing_lane: int = -1
 var _key_buttons: Array[Button] = []
@@ -16,6 +17,7 @@ var _key_buttons: Array[Button] = []
 
 func _ready() -> void:
 	_build_rows()
+	_back_button.pressed.connect(_on_back_pressed)
 
 
 func _build_rows() -> void:
@@ -60,3 +62,20 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		LaneInput.rebind(lane, event.keycode)
 		_key_buttons[lane].text = LaneInput.current_key_string(lane)
 		get_viewport().set_input_as_handled()
+
+
+## This screen was previously a hard trap: it had no Back button and no
+## ui_cancel handler, so once reached from the main menu (via the
+## non-pushing goto_scene(), which leaves SceneRouter's back-stack empty)
+## there was no in-game way to leave it. Skip while a rebind capture is
+## pending so Escape can still be bound to a lane, same as any other key.
+func _unhandled_input(event: InputEvent) -> void:
+	if _capturing_lane != -1:
+		return
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_on_back_pressed()
+
+
+func _on_back_pressed() -> void:
+	SceneRouter.goto_scene("res://ui/main.tscn")

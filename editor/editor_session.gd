@@ -31,6 +31,24 @@ var waveform_peaks: PackedFloat32Array = PackedFloat32Array()
 var pcm_samples: PackedFloat32Array = PackedFloat32Array()
 var pcm_sample_rate: float = 0.0
 
+## True once the user has hand-typed into the BPM or offset SpinBox since
+## the last import. Lets an automatic (post-import) analysis pass tell
+## apart "nobody's touched this yet, safe to populate" from "user already
+## tuned this by hand, don't clobber it" -- reset to false on each fresh
+## import and on any analysis-applied value, since neither of those is a
+## user-typed edit.
+var bpm_offset_user_edited: bool = false
+
+## Set by editor_main.gd's _on_playtest_pressed() right before routing to
+## gameplay, and consumed (cleared) by editor_main.gd's _ready() on the way
+## back. Lets _ready() tell apart "the editor scene is being recreated
+## because the user just came back from a playtest round trip" (keep the
+## in-progress project) from "the editor was freshly opened from the main
+## menu" (reset() and show the start overlay) -- SceneRouter always
+## destroys/recreates the scene via change_scene_to_file, so this can't
+## just be a local editor_main.gd field.
+var returning_from_playtest: bool = false
+
 
 func has_project() -> bool:
 	return not difficulties.is_empty()
@@ -50,6 +68,7 @@ func reset() -> void:
 	difficulties = []
 	active_difficulty_index = 0
 	waveform_peaks = PackedFloat32Array()
+	bpm_offset_user_edited = false
 
 
 ## Copies the shared audio/timing fields onto [param chart] -- call before

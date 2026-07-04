@@ -21,7 +21,7 @@ const LANE_WIDTH: float = 80.0
 const JUDGMENT_Y: float = 764.0
 const KEY_LABEL_Y: float = 788.0
 const NOTE_RADIUS: float = 28.0
-const HOLD_TAIL_WIDTH: float = 24.0
+const HOLD_TAIL_WIDTH: float = 22.0
 
 ## Cosmetic-only scroll rate (does not affect judgment, which is purely
 ## time-based against Conductor.song_time_ms back in game/gameplay.gd) --

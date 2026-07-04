@@ -24,9 +24,9 @@
 ;
 ; Per-judgment breakdown bars and the hit-timing histogram are built by
 ; results.gd since they're data-driven (Judgment counts / hit_errors); the
-; grade/stats/card skeleton below is static per the mockup. No "NEW BEST"
-; badge (no score-persistence layer to compare against yet, per CLAUDE.md's
-; rule against faking data).
+; grade/stats/card skeleton below is static per the mockup. NewBestLabel
+; (under GradeLabel) is populated by results.gd from PlaySession.
+; last_run_is_new_best (WP-E) -- empty text when this run wasn't a best.
 ; -----------------------------------------------------------------------
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_histogram_card"]
@@ -117,15 +117,18 @@ alignment = 1
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 
-[node name="OverlineLabel" type="Label" parent="RootVBox"]
+[node name="OverlineLabel" type="RichTextLabel" parent="RootVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_fonts/font = ExtResource("5_fontmono")
-theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
-text = "—"
-horizontal_alignment = 1
+custom_minimum_size = Vector2(0, 20)
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+theme_override_fonts/normal_font = ExtResource("5_fontmono")
+theme_override_font_sizes/normal_font_size = 14
+theme_override_colors/default_color = Color(0.654902, 0.623529, 0.682353, 1)
+text = "[center]—[/center]"
 
 [node name="MidSpacer" type="Control" parent="RootVBox"]
 custom_minimum_size = Vector2(0, 24)
@@ -138,7 +141,7 @@ theme_override_constants/separation = 80
 
 [node name="GradeBlock" type="VBoxContainer" parent="RootVBox/GradeStatsRow"]
 layout_mode = 2
-theme_override_constants/separation = 0
+theme_override_constants/separation = -8
 
 [node name="GradeLabel" type="Label" parent="RootVBox/GradeStatsRow/GradeBlock"]
 unique_name_in_owner = true
@@ -149,6 +152,15 @@ theme_override_colors/font_color = Color(1, 0.788235, 0.235294, 1)
 theme_override_colors/font_outline_color = Color(1, 0.788235, 0.235294, 0.35)
 theme_override_constants/outline_size = 16
 text = "—"
+horizontal_alignment = 1
+
+[node name="NewBestLabel" type="Label" parent="RootVBox/GradeStatsRow/GradeBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontmono")
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = ""
 horizontal_alignment = 1
 
 [node name="StatsBlock" type="VBoxContainer" parent="RootVBox/GradeStatsRow"]
@@ -256,12 +268,16 @@ theme_override_font_sizes/font_size = 15
 theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
 text = "Hit timing"
 
-[node name="OffsetLabel" type="Label" parent="RootVBox/HistogramCard/HistogramVBox/HistogramHeaderRow"]
+[node name="OffsetLabel" type="RichTextLabel" parent="RootVBox/HistogramCard/HistogramVBox/HistogramHeaderRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_fontmono")
-theme_override_font_sizes/font_size = 12
-theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+custom_minimum_size = Vector2(0, 18)
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+theme_override_fonts/normal_font = ExtResource("5_fontmono")
+theme_override_font_sizes/normal_font_size = 12
+theme_override_colors/default_color = Color(0.654902, 0.623529, 0.682353, 1)
 text = "avg offset —"
 
 [node name="HistogramBody" type="VBoxContainer" parent="RootVBox/HistogramCard/HistogramVBox"]
@@ -269,13 +285,32 @@ custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="HistogramContainer" type="HBoxContainer" parent="RootVBox/HistogramCard/HistogramVBox/HistogramBody"]
-unique_name_in_owner = true
+[node name="HistogramPlot" type="Control" parent="RootVBox/HistogramCard/HistogramVBox/HistogramBody"]
 custom_minimum_size = Vector2(0, 140)
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 3
+
+[node name="CenterLine" type="ColorRect" parent="RootVBox/HistogramCard/HistogramVBox/HistogramBody/HistogramPlot"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 0.0
+anchor_bottom = 1.0
+offset_left = -0.5
+offset_right = 0.5
+color = Color(0.164706, 0.141176, 0.192157, 1)
+
+[node name="HistogramContainer" type="HBoxContainer" parent="RootVBox/HistogramCard/HistogramVBox/HistogramBody/HistogramPlot"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 alignment = 1
-theme_override_constants/separation = 6
+theme_override_constants/separation = 10
 
 [node name="HistogramLabelsRow" type="HBoxContainer" parent="RootVBox/HistogramCard/HistogramVBox/HistogramBody"]
 layout_mode = 2

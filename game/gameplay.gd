@@ -17,6 +17,7 @@ extends Control
 ## PlaySession chart queued, e.g. during development.
 const FALLBACK_CHART_PATH: String = "res://tests/fixtures/m1a_fixture.oct"
 const RESULTS_SCENE: String = "res://game/results.tscn"
+const GAMEPLAY_SCENE: String = "res://game/gameplay.tscn"
 
 const LANE_COUNT: int = 8
 
@@ -42,24 +43,37 @@ const AUDIO_BEATS_PER_BAR: int = 4
 @onready var _reduced_flash_label: Label = %ReducedFlashLabel
 @onready var _failed_label: Label = %FailedLabel
 @onready var _quit_button: Button = %QuitButton
+@onready var _pause_overlay: Control = %PauseOverlay
+@onready var _resume_button: Button = %ResumeButton
+@onready var _restart_button: Button = %RestartButton
+@onready var _pause_quit_button: Button = %PauseQuitButton
 
 var _engine: JudgeEngine
 var _chart: Chart
+## Path of the .oct this run is scoring against, for ScoreStore (WP-E). Left
+## empty for an editor playtest (PlaySession.pending_chart is in-memory,
+## never saved to a path) so _finish() knows not to record/compare a best
+## against a chart identity that doesn't durably exist yet.
+var _chart_path: String = ""
 var _chart_end_ms: float = 0.0
 var _finished: bool = false
+var _paused: bool = false
 
 
 func _ready() -> void:
 	_reduced_flash_label.text = "REDUCED FLASH: %s" % ("ON" if _reduced_flash() else "OFF")
 	_playfield.set_accessibility(_reduced_flash(), _reduced_motion())
 	_quit_button.pressed.connect(_on_quit_pressed)
+	_resume_button.pressed.connect(_on_resume_pressed)
+	_restart_button.pressed.connect(_on_restart_pressed)
+	_pause_quit_button.pressed.connect(_on_quit_pressed)
 
 	_chart = PlaySession.take_pending_chart()
 	if _chart == null:
-		var chart_path := PlaySession.current_chart_path()
-		if chart_path.is_empty():
-			chart_path = FALLBACK_CHART_PATH
-		_chart = OctIO.load_oct(chart_path)
+		_chart_path = PlaySession.current_chart_path()
+		if _chart_path.is_empty():
+			_chart_path = FALLBACK_CHART_PATH
+		_chart = OctIO.load_oct(_chart_path)
 
 	if _chart == null:
 		push_error("gameplay: failed to load a chart")
@@ -78,12 +92,16 @@ func _ready() -> void:
 	_refresh_hud()
 	_update_health_bar(_engine.health)
 
-	var pending_audio := PlaySession.take_pending_audio_stream()
-	Conductor.play(pending_audio if pending_audio != null else _build_backing_track())
+	var stream := PlaySession.take_pending_audio_stream()
+	if stream == null:
+		stream = SongLibrary.load_chart_audio(_chart_path, _chart)
+	if stream == null:
+		stream = _build_backing_track()
+	Conductor.play(stream)
 
 
 func _process(_delta: float) -> void:
-	if _engine == null or _finished:
+	if _engine == null or _finished or _paused:
 		return
 
 	var song_ms := Conductor.song_time_ms()
@@ -95,7 +113,15 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _engine == null or _finished:
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		if _paused:
+			_on_resume_pressed()
+		elif not _finished:
+			_pause()
+		return
+
+	if _engine == null or _finished or _paused:
 		return
 	var song_ms := Conductor.song_time_ms()
 	for lane in LANE_COUNT:
@@ -114,11 +140,13 @@ func _compute_chart_end_ms() -> float:
 	return latest + Config.gameplay.window_good_ms
 
 
+## Legacy/fallback backing track (WP-F): a metronome click track long enough
+## to cover the chart's last note, at the BPM of the chart's first timing
+## point (defaulting to Metronome's own default if the chart has none). Only
+## reached when there's no pending editor-playtest stream and SongLibrary
+## couldn't resolve the chart's real audio (missing/unsupported file) --
+## the primary path plays the actual song via SongLibrary.load_chart_audio().
 func _build_backing_track() -> AudioStreamWAV:
-	# Real audio import is Stage 4 scope -- every chart is currently played
-	# against a metronome click track long enough to cover its last note,
-	# at the BPM of the chart's first timing point (defaulting to
-	# Metronome's own default if the chart has none).
 	var bpm := Metronome.DEFAULT_BPM
 	if not _chart.timing_points.is_empty():
 		bpm = _chart.timing_points[0].bpm
@@ -133,12 +161,33 @@ func _finish() -> void:
 	_finished = true
 	Conductor.stop()
 	PlaySession.last_engine = _engine
+	PlaySession.last_run_is_new_best = ScoreStore.record_result(_chart_path, _engine)
 	SceneRouter.goto_scene_pushed(RESULTS_SCENE)
 
 
 func _on_quit_pressed() -> void:
 	Conductor.stop()
 	SceneRouter.go_back()
+
+
+func _pause() -> void:
+	_paused = true
+	Conductor.pause()
+	_pause_overlay.visible = true
+
+
+func _on_resume_pressed() -> void:
+	_paused = false
+	_pause_overlay.visible = false
+	Conductor.resume()
+
+
+## Reloads gameplay.tscn from scratch -- same "restart from the top"
+## mechanism as Results' Retry button (game/results.gd:_on_retry_pressed),
+## kept consistent rather than inventing a second restart path.
+func _on_restart_pressed() -> void:
+	Conductor.stop()
+	SceneRouter.goto_scene(GAMEPLAY_SCENE)
 
 
 func _populate_song_info() -> void:

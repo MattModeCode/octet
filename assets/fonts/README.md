@@ -4,55 +4,69 @@ Octet's type system (docs/DESIGN_BRIEF.md §3) uses three families:
 
 | Role | Family | Used for |
 |------|--------|----------|
-| Display | Space Grotesk (Bold / Medium) | Logo, large headings |
-| UI | Inter | UI / body text |
-| Mono | JetBrains Mono | HUD numerics — score, combo, accuracy, timing (tabular figures) |
+| Display | Space Grotesk (Bold) | Logo, large headings |
+| UI | Inter (Regular) | UI / body text |
+| Mono | JetBrains Mono (Medium) | HUD numerics — score, combo, accuracy, timing (tabular figures) |
 
-## Current state (Stage 0)
+## Current state (WP-A fidelity pass)
 
-No font binaries are checked in yet. `font_display.tres`, `font_ui.tres`, and
-`font_mono.tres` in this folder are Godot 4 `SystemFont` resources — they
-render using whatever matching fonts are installed on the host OS, and
-degrade to the listed generic fallback (`sans-serif` / `monospace`) if the
-named family isn't present. This keeps the project loadable and legible
-without shipping binaries, at the cost of not being pixel-consistent across
-machines until real font files are added.
-
-`assets/theme/octet_theme.tres` references `font_ui.tres` as the project's
-default theme font. `font_display.tres` and `font_mono.tres` are not yet
-wired into the theme (per-scene wiring for display/mono roles is later
-Stage 3-5 work) but exist now so gameplay/HUD/editor scenes can reference a
-consistent resource path (`res://assets/fonts/font_mono.tres`, etc.) instead
-of duplicating `SystemFont` setup.
-
-## TODO: add real font files
-
-All three are open-licence (SIL Open Font Licence 1.1) and free to redistribute:
-
-- **Space Grotesk** — SIL OFL, via Google Fonts (https://fonts.google.com/specimen/Space+Grotesk)
-- **Inter** — SIL OFL, via Google Fonts (https://fonts.google.com/specimen/Inter)
-- **JetBrains Mono** — SIL OFL, via JetBrains (https://www.jetbrains.com/lp/mono/)
-
-In a later pass, download the `.ttf`/`.otf` files and drop them in as:
+Real SIL-OFL binaries are checked in. Google Fonts ships all three families as
+**variable fonts** (single file, `wght`/`opsz` axes), not static per-weight
+files, so the resource wiring uses Godot's `FontVariation`:
 
 ```
-assets/fonts/SpaceGrotesk-Regular.ttf
-assets/fonts/SpaceGrotesk-Medium.ttf
-assets/fonts/SpaceGrotesk-Bold.ttf
-assets/fonts/Inter-Regular.ttf
-assets/fonts/Inter-Medium.ttf
-assets/fonts/Inter-Bold.ttf
-assets/fonts/JetBrainsMono-Regular.ttf
-assets/fonts/JetBrainsMono-Medium.ttf
-assets/fonts/JetBrainsMono-Bold.ttf
+assets/fonts/Inter-Variable.ttf            (imported as FontFile)
+assets/fonts/SpaceGrotesk-Variable.ttf     (imported as FontFile)
+assets/fonts/JetBrainsMono-Variable.ttf    (imported as FontFile)
+
+assets/fonts/font_ui.tres       -> FontVariation(base_font=Inter-Variable, wght=400)
+assets/fonts/font_display.tres  -> FontVariation(base_font=SpaceGrotesk-Variable, wght=700)
+assets/fonts/font_mono.tres     -> FontVariation(base_font=JetBrainsMono-Variable, wght=500)
 ```
 
-Then swap the `SystemFont` resources (`font_display.tres`, `font_ui.tres`,
-`font_mono.tres`) for `FontFile` resources pointing at these paths, keeping
-the same file paths/role names so `octet_theme.tres` and any scene
-references don't need to change — only the resource contents do.
+`font_ui.tres`/`font_display.tres`/`font_mono.tres` keep the same resource
+paths they had as `SystemFont` placeholders, so `assets/theme/octet_theme.tres`
+and every scene's `ext_resource` references didn't need path changes — only
+the `type=` on those ext_resource lines moved from `"SystemFont"` to
+`"FontVariation"` to match the new resource type.
 
-**Licence note:** the SIL OFL requires including the licence text alongside
-redistributed font files. When the real `.ttf` files are added, also add
-`assets/fonts/OFL.txt` (or per-family licence files) with attribution. Not
-done yet — flagged here so it isn't forgotten, not a blocker for Stage 0.
+Each role is wired to a single weight project-wide (no per-node bold/regular
+split yet) — that granularity is later per-screen fidelity work (WP-G…L), not
+this pass. If a specific label needs a different weight, create another
+`FontVariation` wrapping the same base `FontFile` with a different
+`variation_opentype` value rather than duplicating the `.ttf`.
+
+**Licence:** all three are SIL Open Font License 1.1, redistributable.
+Licence text for each family is checked in as `OFL-<Family>.txt`.
+
+## Related fix: radial gradient background
+
+While verifying this pass, `ui/radial_background.gd`'s `_build_radial_texture()`
+had a real (pre-existing, unrelated to the font swap) bug: `Gradient.new()`
+seeds two default points (black@0.0, **white@1.0**), and the function only
+overwrote point 0's colour and then *added* further points rather than
+replacing the existing ones — so the default white point at offset 1.0 was
+never removed, and every radial background (Main Menu, Gameplay HUD, Results,
+Calibration) faded to white/grey past ~60% radius instead of holding at the
+intended near-black ink colour. Fixed by setting `gradient.offsets`/
+`gradient.colors` wholesale instead of mutating the default point list.
+Confirmed visually before/after via a headless-launched, screenshotted
+instance — the bug reproduced even on the pre-fidelity-pass `project.godot`,
+so it wasn't caused by this pass, just never actually screenshotted before.
+
+## Canvas/window scale (0.667×) decision
+
+`project.godot` keeps `window/size/viewport_width/height=1920x1080` (matching
+every mockup's coordinate space exactly) with
+`window/size/window_width_override=1280`/`height_override=720` — the same
+override added earlier to fix the global hitbox-offset bug (see
+`docs/DESIGN_HANDOFF.md`). That override was **not reverted** here: dropping
+it back to a native 1920×1080 window risks reintroducing that bug on displays
+where a full 1080p window doesn't fit uncropped. Instead, text sharpness at
+the resulting 0.667× canvas_items scale is handled by Godot's own per-CanvasItem
+font oversampling (automatic, re-rasterizes glyphs at their effective on-screen
+size under the canvas transform) plus explicit `[gui]` antialiasing/hinting
+settings added to `project.godot`, combined with real `FontFile`-backed fonts
+instead of `SystemFont`. Verified empirically (not assumed): headless-launched
+screenshots of Main Menu, Song Select, Editor, and Calibration at the real
+1280×720 window all show crisp text with no visible softening.

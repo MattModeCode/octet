@@ -16,6 +16,11 @@ const PROFILE_SCENE := "res://ui/profile.tscn"
 ## exists.
 const SETTINGS_SCENE := "res://ui/rebind_panel.tscn"
 
+## DesignTokens is an autoload singleton, but lane_color() is static -- call
+## it on the script itself rather than the instance to avoid Godot's
+## STATIC_CALLED_ON_INSTANCE warning.
+const DesignTokensScript := preload("res://core/design_tokens.gd")
+
 ## Wordmark glow-pulse tuning (mockup's `octetLogoGlow`, 3.4s ease-in-out
 ## infinite, text-shadow alpha .35<->.6). Approximated here via an animated
 ## font outline alpha, since Godot Label has no blurred text-shadow.
@@ -38,6 +43,10 @@ const DRIFT_DURATIONS := [5.0, 6.5, 4.2, 5.8]
 const LANE_PILL_SIZE := Vector2(0, 64)
 const LANE_PILLS_PER_COLUMN := 12 # generous run so the clipped drift never shows a gap
 
+## Home-screen ambient music (WP-F) -- quiet background cycling, not the
+## focus of the screen, so it plays well under Song Select's preview volume.
+const AMBIENT_VOLUME_DB := -14.0
+
 @onready var _tick_row: HBoxContainer = %TickRow
 @onready var _wordmark: Label = %WordmarkLabel
 @onready var _play_button: Button = %PlayButton
@@ -51,6 +60,10 @@ const LANE_PILLS_PER_COLUMN := 12 # generous run so the clipped drift never show
 
 var _glow_tween: Tween
 
+var _ambient_player: AudioStreamPlayer
+var _ambient_tracks: Array[String] = []
+var _ambient_index: int = -1
+
 
 func _ready() -> void:
 	_build_tick_row()
@@ -58,6 +71,7 @@ func _ready() -> void:
 	_apply_profile_placeholder()
 	_wire_buttons()
 	_start_wordmark_glow()
+	_start_ambient_music()
 
 
 ## Eight bars, mirrored lane spectrum (same order as DesignTokens.LANE_COLORS),
@@ -92,6 +106,11 @@ func _start_tick_pulse(bar: ColorRect, delay_sec: float) -> void:
 ## fade in from the left — the left-edge fade is a documented deviation,
 ## see main.tscn's colour-comment block; Godot Control has no CSS
 ## mask-image equivalent without a custom shader).
+##
+## The mockup checkerboards which tile starts each column: columns 1 & 3
+## begin with a lane-colour tile, columns 2 & 4 begin with a surface tile
+## (confirmed against the live "Octet - Main Menu.dc.html" markup) — so the
+## starting parity alternates per column, not just per row.
 func _build_ambient_lanes() -> void:
 	var column_lane_pairs := [[0, 1], [6, 1], [2, 1], [4, 1]]
 	for col_index in range(4):
@@ -100,6 +119,7 @@ func _build_ambient_lanes() -> void:
 		column.add_theme_constant_override("separation", 36)
 		_columns_row.add_child(column)
 		var lane_index: int = column_lane_pairs[col_index][0]
+		var color_first: bool = col_index % 2 == 0
 		for row in range(LANE_PILLS_PER_COLUMN):
 			var pill := PanelContainer.new()
 			pill.custom_minimum_size = LANE_PILL_SIZE
@@ -108,7 +128,8 @@ func _build_ambient_lanes() -> void:
 			style.corner_radius_top_right = 32
 			style.corner_radius_bottom_right = 32
 			style.corner_radius_bottom_left = 32
-			style.bg_color = _lane_color(lane_index) if row % 2 == 0 else _surface_raised_color()
+			var row_is_color: bool = (row % 2 == 0) == color_first
+			style.bg_color = _lane_color(lane_index) if row_is_color else _surface_raised_color()
 			pill.add_theme_stylebox_override("panel", style)
 			column.add_child(pill)
 		_start_column_drift(column, DRIFT_DURATIONS[col_index])
@@ -121,6 +142,59 @@ func _start_column_drift(column: VBoxContainer, duration_sec: float) -> void:
 	tween.set_loops()
 	tween.tween_property(column, "position:y", -DRIFT_DISTANCE, duration_sec) \
 		.from(0.0).set_trans(Tween.TRANS_LINEAR)
+
+
+## Cycles through the same chart pool Song Select scans (core/song_library.gd,
+## WP-F), one shared audio track per song regardless of how many difficulties
+## it has. Silently does nothing if no songs are found (e.g. a fresh install
+## with no res://songs content and no user songs yet) -- ambient music is a
+## nicety, not something worth erroring over.
+func _start_ambient_music() -> void:
+	_ambient_tracks = _collect_ambient_tracks()
+	if _ambient_tracks.is_empty():
+		return
+	_ambient_player = AudioStreamPlayer.new()
+	_ambient_player.volume_db = AMBIENT_VOLUME_DB
+	_ambient_player.finished.connect(_on_ambient_track_finished)
+	add_child(_ambient_player)
+	_ambient_tracks.shuffle()
+	_play_ambient_track_from(0)
+
+
+## Unique resolved audio paths across the scanned chart pool -- multiple
+## difficulties of the same song share one audio file, so this dedupes
+## before building the cycle order.
+func _collect_ambient_tracks() -> Array[String]:
+	var seen: Dictionary = {}
+	var tracks: Array[String] = []
+	for entry in SongLibrary.scan_charts():
+		var audio_path := SongLibrary.resolve_audio_path(String(entry.path), entry.chart)
+		if audio_path.is_empty() or seen.has(audio_path) or not FileAccess.file_exists(audio_path):
+			continue
+		seen[audio_path] = true
+		tracks.append(audio_path)
+	return tracks
+
+
+## Tries each track starting at [param start_index], wrapping once through
+## the full list, so a handful of unreadable files can't spin this into an
+## infinite finished->play->finished loop -- if every track fails to load,
+## this gives up quietly rather than looping forever.
+func _play_ambient_track_from(start_index: int) -> void:
+	for attempt in _ambient_tracks.size():
+		var index := (start_index + attempt) % _ambient_tracks.size()
+		var stream := AudioImport.load_audio_file(_ambient_tracks[index])
+		if stream != null:
+			_ambient_index = index
+			_ambient_player.stream = stream
+			_ambient_player.play()
+			return
+
+
+func _on_ambient_track_finished() -> void:
+	if _ambient_tracks.is_empty():
+		return
+	_play_ambient_track_from((_ambient_index + 1) % _ambient_tracks.size())
 
 
 func _apply_profile_placeholder() -> void:
@@ -188,7 +262,7 @@ func _set_glow_alpha(alpha: float) -> void:
 
 func _lane_color(lane_index: int) -> Color:
 	if _has_autoload("DesignTokens"):
-		return DesignTokens.lane_color(lane_index)
+		return DesignTokensScript.lane_color(lane_index)
 	const FALLBACK_LANE_COLORS := [
 		"#B14AED", "#FF2D6E", "#FF7A3C", "#FFC93C",
 		"#FFC93C", "#FF7A3C", "#FF2D6E", "#B14AED",

@@ -35,6 +35,26 @@ static func load_oct(path: String) -> Chart:
 	return _dict_to_chart(data)
 
 
+## Parses `text` as .oct JSON directly into a Chart, without a file round
+## trip -- the read-side counterpart to chart_to_json(), used by
+## OctetBundle.read_bundle() to parse a chart_*.oct zip entry it already
+## has in memory. Returns null (and pushes an error) on malformed JSON or a
+## non-object root, same failure contract as load_oct().
+static func chart_from_json(text: String) -> Chart:
+	var json := JSON.new()
+	var parse_err: Error = json.parse(text)
+	if parse_err != OK:
+		push_error("OctIO.chart_from_json: malformed JSON at line %d: %s" % [json.get_error_line(), json.get_error_message()])
+		return null
+
+	var data = json.data
+	if typeof(data) != TYPE_DICTIONARY:
+		push_error("OctIO.chart_from_json: root is not a JSON object")
+		return null
+
+	return _dict_to_chart(data)
+
+
 ## Serializes `chart` to the .oct JSON text -- the same shape save_oct()
 ## writes to disk, exposed as a string for callers that need the bytes
 ## without a file round-trip (e.g. OctetBundle.write_bundle packing a

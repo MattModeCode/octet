@@ -16,6 +16,7 @@ func get_tests() -> Array[Dictionary]:
 	return [
 		{"name": "octet_bundle_write_and_read_manifest", "callable": test_write_and_read_manifest},
 		{"name": "octet_bundle_write_contains_chart_entries", "callable": test_write_contains_chart_entries},
+		{"name": "octet_bundle_read_bundle_round_trip", "callable": test_read_bundle_round_trip},
 	]
 
 
@@ -96,4 +97,42 @@ func test_write_contains_chart_entries() -> bool:
 	reader.close()
 	if ok:
 		print("[PASS] octet_bundle_write_contains_chart_entries")
+	return ok
+
+
+## read_bundle() is the editor's "Open existing beatmap" flow's read path
+## (editor/editor_main.gd's _open_octet_bundle) -- confirms a bundle
+## written by write_bundle() comes back with every difficulty and the
+## exact original audio bytes, in manifest order.
+func test_read_bundle_round_trip() -> bool:
+	var write_result := _write_test_bundle()
+	var ok := TestRunner._assert(write_result.err == OK, "octet_bundle_read_bundle_round_trip: write_bundle failed with %d" % write_result.err)
+	if not ok:
+		return false
+
+	var bundle := OctetBundle.read_bundle(BUNDLE_PATH)
+	ok = TestRunner._assert(not bundle.is_empty(), "octet_bundle_read_bundle_round_trip: read_bundle returned empty") and ok
+	if bundle.is_empty():
+		return ok
+
+	var charts: Array = bundle["charts"]
+	ok = TestRunner._assert(charts.size() == 2, "octet_bundle_read_bundle_round_trip: expected 2 charts, got %d" % charts.size()) and ok
+	if charts.size() >= 2:
+		ok = TestRunner._assert(charts[0].metadata.difficulty_name == "Easy",
+			"octet_bundle_read_bundle_round_trip: charts[0] difficulty_name mismatch, got '%s'" % charts[0].metadata.difficulty_name) and ok
+		ok = TestRunner._assert(charts[1].metadata.difficulty_name == "Hard",
+			"octet_bundle_read_bundle_round_trip: charts[1] difficulty_name mismatch, got '%s'" % charts[1].metadata.difficulty_name) and ok
+		ok = TestRunner._assert(charts[0].notes.size() == 1 and charts[0].notes[0].lane == 0,
+			"octet_bundle_read_bundle_round_trip: charts[0] notes mismatch") and ok
+
+	ok = TestRunner._assert(String(bundle.get("audio_filename", "")) == "song.wav",
+		"octet_bundle_read_bundle_round_trip: expected audio_filename 'song.wav', got '%s'" % str(bundle.get("audio_filename"))) and ok
+
+	var original_bytes := FileAccess.get_file_as_bytes(AUDIO_PATH)
+	var read_bytes: PackedByteArray = bundle.get("audio_bytes", PackedByteArray())
+	ok = TestRunner._assert(read_bytes.size() == original_bytes.size() and read_bytes == original_bytes,
+		"octet_bundle_read_bundle_round_trip: audio_bytes don't match the original file") and ok
+
+	if ok:
+		print("[PASS] octet_bundle_read_bundle_round_trip")
 	return ok

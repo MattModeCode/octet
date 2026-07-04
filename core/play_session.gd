@@ -19,6 +19,12 @@ var mods: GameplayMods = GameplayMods.new()
 ## persist across change_scene_to_file).
 var last_engine: JudgeEngine = null
 
+## Set by game/gameplay.gd's _finish() alongside last_engine -- true when
+## that run set a new persisted best (core/score_store.gd, WP-E). Read by
+## game/results.gd's NEW BEST badge; gameplay.gd overwrites it on every
+## finish, so there's nothing to clear here.
+var last_run_is_new_best: bool = false
+
 ## Playtest-in-editor bridge (§3.6): editor_main.gd sets these to hand
 ## gameplay.gd an in-memory Chart/AudioStream directly, bypassing the
 ## normal load-from-.oct-path and Metronome-backing-track flow (song
@@ -27,6 +33,16 @@ var last_engine: JudgeEngine = null
 ## accidentally reuse a stale playtest chart.
 var pending_chart: Chart = null
 var pending_audio_stream: AudioStream = null
+
+## Set alongside pending_chart/pending_audio_stream when editor_main.gd
+## launches a playtest, so game/results.gd's Back button can return to the
+## editor instead of the hardcoded Song Select destination once the song
+## finishes (the scene stack alone isn't enough -- by the time Results is
+## reached the stack's top is gameplay.tscn, not the editor). Cleared by
+## song_select.gd before a normal play (so a stale flag from an earlier
+## playtest never leaks into an unrelated run) and by results.gd once Back
+## consumes it.
+var playtest_origin_scene: String = ""
 
 
 ## Returns and clears pending_chart.

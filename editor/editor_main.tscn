@@ -1,9 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://editor/editor_main.gd" id="1_editormaingd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
 [ext_resource type="Script" path="res://editor/waveform_view.gd" id="3_waveformgd"]
 [ext_resource type="Script" path="res://editor/note_timeline_view.gd" id="4_timelinegd"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_display.tres" id="5_fontdisplay"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_ui.tres" id="6_fontui"]
 
 ; Scene-local bar style: flat full-width bar (no corner radius, hairline
 ; bottom border only) -- matches the 2A mockup's top/difficulty/utility
@@ -17,6 +19,46 @@ content_margin_left = 20.0
 content_margin_right = 20.0
 content_margin_top = 10.0
 content_margin_bottom = 10.0
+
+; Segmented-control group style (Snap 1/1-1/16 in the mockup): one shared
+; dark bg + hairline border + rounded corners around the whole button row,
+; with each button drawn flat (no individual border/radius) so they read as
+; one joined pill, matching 2a's SNAP control.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_segment_group"]
+bg_color = Color(0.121569, 0.101961, 0.14902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+; Start-overlay card style. Not in the "Octet - Editor.dc.html" mockup
+; (which only shows the editor already mid-project) -- built on-brand from
+; DESIGN_BRIEF.md's card/surface tokens per CLAUDE.md's design-fidelity
+; rule, flagged here as a documented addition rather than a mockup match.
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_overlay_card"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+content_margin_left = 36.0
+content_margin_top = 32.0
+content_margin_right = 36.0
+content_margin_bottom = 32.0
 
 [node name="EditorMain" type="Control"]
 layout_mode = 3
@@ -80,6 +122,12 @@ layout_mode = 2
 custom_minimum_size = Vector2(110, 0)
 text = "Import audio"
 
+[node name="OpenBeatmapButton" type="Button" parent="MainVBox/TopBar/TopBarContent"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+text = "Open beatmap"
+
 [node name="FilenameLabel" type="Label" parent="MainVBox/TopBar/TopBarContent"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -139,11 +187,10 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_bar")
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="DifficultyTabs" type="TabBar" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
+[node name="DifficultyTabsRow" type="HBoxContainer" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
-tab_close_display_policy = 0
+theme_override_constants/separation = 6
 
 [node name="AddDifficultyButton" type="Button" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
 unique_name_in_owner = true
@@ -157,11 +204,9 @@ layout_mode = 2
 custom_minimum_size = Vector2(60, 0)
 text = "−"
 
-[node name="VSep3" type="ColorRect" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
-custom_minimum_size = Vector2(1, 24)
+[node name="DifficultyBarSpacer" type="Control" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
 layout_mode = 2
-size_flags_vertical = 4
-color = Color(0.164706, 0.141176, 0.192157, 1)
+size_flags_horizontal = 3
 
 [node name="BpmLabel" type="Label" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
 layout_mode = 2
@@ -191,17 +236,6 @@ max_value = 600000.0
 step = 1.0
 value = 0.0
 
-[node name="AddTimingPointButton" type="Button" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(60, 0)
-text = "+ TP"
-
-[node name="TimingPointsRow" type="HBoxContainer" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 6
-
 [node name="VSep4" type="ColorRect" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
 custom_minimum_size = Vector2(1, 24)
 layout_mode = 2
@@ -213,10 +247,31 @@ layout_mode = 2
 text = "Snap"
 vertical_alignment = 1
 
-[node name="SnapRow" type="HBoxContainer" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
+[node name="SnapPanel" type="PanelContainer" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_segment_group")
+
+[node name="SnapRow" type="HBoxContainer" parent="MainVBox/DifficultyBar/DifficultyBarContent/SnapPanel"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 0
+
+[node name="VSep5" type="ColorRect" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
+custom_minimum_size = Vector2(1, 24)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.164706, 0.141176, 0.192157, 1)
+
+[node name="AddTimingPointButton" type="Button" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(60, 0)
+text = "+ TP"
+
+[node name="TimingPointsRow" type="HBoxContainer" parent="MainVBox/DifficultyBar/DifficultyBarContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
 
 [node name="WaveformPanel" type="PanelContainer" parent="MainVBox"]
 layout_mode = 2
@@ -253,10 +308,11 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
 [node name="NoteTimelineView" type="Control" parent="MainVBox/BodyHBox/TimelineScroll"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(1800, 320)
+custom_minimum_size = Vector2(800, 1800)
 layout_mode = 2
 script = ExtResource("4_timelinegd")
 
@@ -265,7 +321,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="InspectorVBox" type="VBoxContainer" parent="MainVBox/BodyHBox/InspectorPanel"]
-custom_minimum_size = Vector2(240, 0)
+custom_minimum_size = Vector2(260, 0)
 layout_mode = 2
 theme_override_constants/separation = 12
 
@@ -274,17 +330,29 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Selected note"
 
-[node name="SelectedNoteLabel" type="Label" parent="MainVBox/BodyHBox/InspectorPanel/InspectorVBox"]
+[node name="SelectedNoteFields" type="VBoxContainer" parent="MainVBox/BodyHBox/InspectorPanel/InspectorVBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
-text = "No note selected."
-autowrap_mode = 3
+theme_override_constants/separation = 10
 
 [node name="InspectorSep" type="ColorRect" parent="MainVBox/BodyHBox/InspectorPanel/InspectorVBox"]
 custom_minimum_size = Vector2(0, 1)
 layout_mode = 2
 color = Color(0.164706, 0.141176, 0.192157, 1)
+
+[node name="TimingPointTitle" type="Label" parent="MainVBox/BodyHBox/InspectorPanel/InspectorVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Timing point"
+
+[node name="TimingPointFields" type="VBoxContainer" parent="MainVBox/BodyHBox/InspectorPanel/InspectorVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="InspectorSpacer" type="Control" parent="MainVBox/BodyHBox/InspectorPanel/InspectorVBox"]
+layout_mode = 2
+size_flags_vertical = 3
 
 [node name="DeleteNoteButton" type="Button" parent="MainVBox/BodyHBox/InspectorPanel/InspectorVBox"]
 unique_name_in_owner = true
@@ -322,19 +390,13 @@ text = "Duplicate"
 unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(100, 0)
-text = "Analyze"
+text = "Re-analyze"
 
-[node name="SaveChartButton" type="Button" parent="MainVBox/BottomActionsBar/BottomActionsContent"]
+[node name="SaveBeatmapButton" type="Button" parent="MainVBox/BottomActionsBar/BottomActionsContent"]
 unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(140, 0)
-text = "Save chart"
-
-[node name="ExportBundleButton" type="Button" parent="MainVBox/BottomActionsBar/BottomActionsContent"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(150, 0)
-text = "Export bundle"
+text = "Save beatmap"
 
 [node name="PlaytestButton" type="Button" parent="MainVBox/BottomActionsBar/BottomActionsContent"]
 unique_name_in_owner = true
@@ -366,7 +428,7 @@ value = 1.0
 
 [node name="RowZoomLabel" type="Label" parent="MainVBox/BottomUtilityBar/BottomUtilityContent"]
 layout_mode = 2
-text = "Zoom (rows)"
+text = "Zoom (lanes)"
 vertical_alignment = 1
 
 [node name="RowZoomSlider" type="HSlider" parent="MainVBox/BottomUtilityBar/BottomUtilityContent"]
@@ -392,6 +454,75 @@ layout_mode = 2
 custom_minimum_size = Vector2(90, 0)
 text = "Back"
 
+[node name="StartOverlay" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Scrim" type="ColorRect" parent="StartOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047, 0.039, 0.059, 0.86)
+
+[node name="Center" type="CenterContainer" parent="StartOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Card" type="PanelContainer" parent="StartOverlay/Center"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_overlay_card")
+
+[node name="CardVBox" type="VBoxContainer" parent="StartOverlay/Center/Card"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="TitleLabel" type="Label" parent="StartOverlay/Center/Card/CardVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+theme_override_fonts/font = ExtResource("5_fontdisplay")
+theme_override_font_sizes/font_size = 22
+text = "Octet Editor"
+
+[node name="SubtitleLabel" type="Label" parent="StartOverlay/Center/Card/CardVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+theme_override_fonts/font = ExtResource("6_fontui")
+theme_override_font_sizes/font_size = 13
+text = "Import a song to start a new chart, or open a beatmap you've already saved."
+autowrap_mode = 3
+
+[node name="ImportSongButton" type="Button" parent="StartOverlay/Center/Card/CardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 44)
+text = "Import a song — new chart"
+
+[node name="OpenBeatmapOverlayButton" type="Button" parent="StartOverlay/Center/Card/CardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 44)
+text = "Open existing beatmap"
+
+[node name="RecoverAutosaveButton" type="Button" parent="StartOverlay/Center/Card/CardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 44)
+visible = false
+text = "Recover autosave"
+
 [node name="MetronomePlayer" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true
 
@@ -405,3 +536,19 @@ size = Vector2i(900, 600)
 access = 2
 file_mode = 0
 filters = PackedStringArray("*.wav ; WAV audio", "*.ogg, *.oga ; OGG Vorbis audio", "*.mp3 ; MP3 audio")
+
+[node name="OpenBeatmapDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Open beatmap"
+size = Vector2i(900, 600)
+access = 2
+file_mode = 0
+filters = PackedStringArray("*.oct, *.octet ; Octet beatmaps")
+
+[node name="SaveBeatmapDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Save beatmap"
+size = Vector2i(900, 600)
+access = 2
+file_mode = 4
+filters = PackedStringArray("*.octet ; Octet beatmap bundle")

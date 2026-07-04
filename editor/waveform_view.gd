@@ -53,7 +53,12 @@ func _draw_beat_grid() -> void:
 
 ## Traces the peak envelope as a smooth polyline (upper + mirrored lower)
 ## rather than discrete vertical bars -- closer to the imported mockup's
-## continuous waveform look.
+## continuous waveform look. Deliberate deviation from 2a: the mockup shows
+## two overlapping traces (pink + orchid), which reads as a stereo L/R
+## visualization -- AudioImport.build_waveform_peaks only produces one
+## mono-summed envelope, so a second trace here would be fabricated, not
+## real per-channel data (same "never fake data" principle as
+## DESIGN_HANDOFF.md's other documented deviations).
 func _draw_waveform() -> void:
 	if _peaks.is_empty():
 		return

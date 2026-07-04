@@ -107,6 +107,16 @@ func _register_all_tests() -> void:
 	for entry in audio_analysis_suite.get_tests():
 		_tests.append(TestCase.new(entry.name, entry.callable))
 
+	var score_store_suite := TestScoreStore.new()
+	_suites.append(score_store_suite)
+	for entry in score_store_suite.get_tests():
+		_tests.append(TestCase.new(entry.name, entry.callable))
+
+	var net_client_suite := TestNetClient.new()
+	_suites.append(net_client_suite)
+	for entry in net_client_suite.get_tests():
+		_tests.append(TestCase.new(entry.name, entry.callable))
+
 
 func _run_all_tests() -> int:
 	var pass_count := 0

@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://game/gameplay.gd" id="1_gameplaygd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
@@ -6,6 +6,10 @@
 [ext_resource type="FontVariation" path="res://assets/fonts/font_mono.tres" id="4_fontmono"]
 [ext_resource type="FontVariation" path="res://assets/fonts/font_display.tres" id="5_fontdisplay"]
 [ext_resource type="PackedScene" path="res://ui/radial_background.tscn" id="6_radialbg"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono_bold.tres" id="7_fontmonobold"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono_overline.tres" id="8_fontmonooverline"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono_pill.tres" id="9_fontmonopill"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_ui_medium.tres" id="10_fontuimedium"]
 
 ; -----------------------------------------------------------------------
 ; 1a "Classic centered" gameplay HUD, imported from
@@ -45,10 +49,10 @@ corner_radius_top_left = 20
 corner_radius_top_right = 20
 corner_radius_bottom_right = 20
 corner_radius_bottom_left = 20
-content_margin_left = 10.0
-content_margin_top = 3.0
-content_margin_right = 10.0
-content_margin_bottom = 3.0
+content_margin_left = 8.0
+content_margin_top = 2.0
+content_margin_right = 8.0
+content_margin_bottom = 2.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_track"]
 bg_color = Color(0.164706, 0.141176, 0.192157, 1)
@@ -116,6 +120,7 @@ theme_override_constants/separation = 10
 [node name="ArtistLabel" type="Label" parent="TopLeftBlock/ArtistRow"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_fonts/font = ExtResource("10_fontuimedium")
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
 text = "Unknown artist"
@@ -127,7 +132,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_pill")
 [node name="DifficultyPillLabel" type="Label" parent="TopLeftBlock/ArtistRow/DifficultyPill"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_fonts/font = ExtResource("9_fontmonopill")
 theme_override_font_sizes/font_size = 11
 theme_override_colors/font_color = Color(1, 0.788235, 0.235294, 1)
 text = "— · 0.0★"
@@ -138,7 +143,7 @@ anchors_preset = 0
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -300.0
-offset_top = 30.0
+offset_top = 36.0
 offset_right = 300.0
 offset_bottom = 140.0
 grow_horizontal = 2
@@ -147,7 +152,7 @@ theme_override_constants/separation = 2
 [node name="ScoreOverline" type="Label" parent="ScoreBlock"]
 layout_mode = 2
 horizontal_alignment = 1
-theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_fonts/font = ExtResource("8_fontmonooverline")
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
 text = "SCORE"
@@ -156,7 +161,7 @@ text = "SCORE"
 unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
-theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_fonts/font = ExtResource("7_fontmonobold")
 theme_override_font_sizes/font_size = 44
 theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
 text = "0"
@@ -167,44 +172,56 @@ anchors_preset = 0
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -260.0
-offset_top = 26.0
+offset_top = 32.0
 offset_right = -48.0
 offset_bottom = 180.0
 grow_horizontal = 0
-theme_override_constants/separation = 4
+theme_override_constants/separation = 2
 
-[node name="AccOverline" type="Label" parent="AccComboBlock"]
+[node name="AccGroup" type="VBoxContainer" parent="AccComboBlock"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="AccOverline" type="Label" parent="AccComboBlock/AccGroup"]
 layout_mode = 2
 horizontal_alignment = 2
-theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_fonts/font = ExtResource("8_fontmonooverline")
 theme_override_font_sizes/font_size = 11
 theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
 text = "ACC"
 
-[node name="AccuracyValueLabel" type="Label" parent="AccComboBlock"]
+[node name="AccuracyValueLabel" type="Label" parent="AccComboBlock/AccGroup"]
 unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 2
-theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_fonts/font = ExtResource("7_fontmonobold")
 theme_override_font_sizes/font_size = 26
 theme_override_colors/font_color = Color(1, 0.788235, 0.235294, 1)
 text = "100.00%"
 
-[node name="ComboOverline" type="Label" parent="AccComboBlock"]
+[node name="ComboGroup" type="VBoxContainer" parent="AccComboBlock"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="ComboOverline" type="Label" parent="AccComboBlock/ComboGroup"]
 layout_mode = 2
 horizontal_alignment = 2
-theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_fonts/font = ExtResource("8_fontmonooverline")
 theme_override_font_sizes/font_size = 11
 theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
 text = "COMBO"
 
-[node name="ComboValueLabel" type="Label" parent="AccComboBlock"]
+[node name="ComboValueLabel" type="Label" parent="AccComboBlock/ComboGroup"]
 unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 2
-theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_fonts/font = ExtResource("7_fontmonobold")
 theme_override_font_sizes/font_size = 40
 theme_override_colors/font_color = Color(1, 0.176471, 0.431373, 1)
+theme_override_colors/font_shadow_color = Color(1, 0.176471, 0.431373, 0.55)
+theme_override_constants/shadow_outline_size = 10
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 0
 text = "0x"
 
 [node name="HealthBarTrack" type="Panel" parent="."]
@@ -277,4 +294,58 @@ offset_left = 1780.0
 offset_top = 1016.0
 offset_right = 1896.0
 offset_bottom = 1060.0
+text = "Quit"
+
+[node name="PauseOverlay" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047059, 0.039216, 0.058824, 0.85)
+mouse_filter = 0
+
+[node name="PausePanel" type="PanelContainer" parent="PauseOverlay"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -140.0
+offset_right = 180.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PauseVBox" type="VBoxContainer" parent="PauseOverlay/PausePanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="PausedLabel" type="Label" parent="PauseOverlay/PausePanel/PauseVBox"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("5_fontdisplay")
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "PAUSED"
+
+[node name="ResumeButton" type="Button" parent="PauseOverlay/PausePanel/PauseVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Resume"
+
+[node name="RestartButton" type="Button" parent="PauseOverlay/PausePanel/PauseVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Restart"
+
+[node name="PauseQuitButton" type="Button" parent="PauseOverlay/PausePanel/PauseVBox"]
+unique_name_in_owner = true
+layout_mode = 2
 text = "Quit"

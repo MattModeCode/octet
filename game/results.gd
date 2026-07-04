@@ -11,27 +11,29 @@ extends Control
 ##
 ## Online score submission ("if online and ranked, submit score and show
 ## placement") is Stage 7 (M4) scope -- Net is still a stub that always
-## reports offline, so there is nothing to submit yet. No "NEW BEST" badge
-## either -- no score-persistence layer exists to compare against (not
-## faking the mockup's sample data, per CLAUDE.md's rule).
+## reports offline, so there is nothing to submit yet. The NEW BEST badge
+## (WP-E) reads PlaySession.last_run_is_new_best, set by game/gameplay.gd's
+## _finish() via core/score_store.gd -- the comparison happens once, there,
+## not re-derived here.
 
 const SONG_SELECT_SCENE: String = "res://game/song_select.tscn"
 const GAMEPLAY_SCENE: String = "res://game/gameplay.tscn"
 
-const HISTOGRAM_BUCKET_COUNT: int = 9
-const HISTOGRAM_BAR_WIDTH: float = 68.0
+const HISTOGRAM_BUCKET_COUNT: int = 20
+const HISTOGRAM_BAR_WIDTH: float = 28.0
 const HISTOGRAM_MAX_HEIGHT: float = 140.0
 
 const BREAKDOWN_BAR_HEIGHT := 12.0
 
-@onready var _overline_label: Label = %OverlineLabel
+@onready var _overline_label: RichTextLabel = %OverlineLabel
 @onready var _grade_label: Label = %GradeLabel
+@onready var _new_best_label: Label = %NewBestLabel
 @onready var _score_value: Label = %ScoreValue
 @onready var _accuracy_value: Label = %AccuracyValue
 @onready var _combo_value: Label = %ComboValue
 @onready var _breakdown_block: VBoxContainer = %BreakdownBlock
 @onready var _badges_label: Label = %BadgesLabel
-@onready var _offset_label: Label = %OffsetLabel
+@onready var _offset_label: RichTextLabel = %OffsetLabel
 @onready var _histogram_container: HBoxContainer = %HistogramContainer
 @onready var _retry_button: Button = %RetryButton
 @onready var _next_button: Button = %NextButton
@@ -46,7 +48,7 @@ func _ready() -> void:
 
 	if _engine == null:
 		_grade_label.text = "—"
-		_overline_label.text = "No results"
+		_overline_label.text = "[center]No results[/center]"
 		_retry_button.disabled = true
 		_next_button.disabled = true
 		return
@@ -75,14 +77,9 @@ func _populate() -> void:
 	if not _engine.is_ranked():
 		badges.append("UNRANKED")
 	_badges_label.text = "  ·  ".join(badges)
+	_new_best_label.text = "NEW BEST" if PlaySession.last_run_is_new_best else ""
 
-	var mean_offset := _mean_offset()
-	var direction := "on time"
-	if mean_offset < 0.0:
-		direction = "early"
-	elif mean_offset > 0.0:
-		direction = "late"
-	_offset_label.text = "avg offset %.1fms %s" % [absf(mean_offset), direction]
+	_offset_label.text = "[color=#A79FAE]avg offset [/color][color=#FF2D6E]%.1fms[/color]" % _mean_offset()
 
 	_build_histogram()
 
@@ -90,13 +87,13 @@ func _populate() -> void:
 func _song_overline() -> String:
 	var path := PlaySession.current_chart_path()
 	if path.is_empty():
-		return "—"
+		return "[center]—[/center]"
 	var chart := OctIO.load_oct(path)
 	if chart == null:
-		return "—"
+		return "[center]—[/center]"
 	var meta := chart.metadata
-	var diff_name := meta.difficulty_name.to_upper() if not meta.difficulty_name.is_empty() else "—"
-	return "%s — %s Lv.%.0f" % [meta.title, diff_name, meta.star_rating]
+	var diff_name := meta.difficulty_name if not meta.difficulty_name.is_empty() else "—"
+	return "[center][color=#A79FAE]%s[/color] [color=#6E6676]— %s Lv.%.0f[/color][/center]" % [meta.title, diff_name, meta.star_rating]
 
 
 func _mean_offset() -> float:
@@ -188,9 +185,9 @@ func _size_breakdown_fill(fill: ColorRect, track: Control, fraction: float) -> v
 ## HISTOGRAM_BUCKET_COUNT bars spanning the observed range (at least the
 ## Good window, wider if any tail-release outliers exceeded it). Bars are
 ## bottom-aligned (SIZE_SHRINK_END) inside a fixed-height container so they
-## read as a growing-up bar chart. Coloured on an orchid (early) -> pink
-## (on time) -> coral (late) gradient across bucket position, matching the
-## mockup's SVG (not by count magnitude).
+## read as a growing-up bar chart. Coloured in three flat bands -- orchid
+## (early third), pink (mid third), coral (late third) -- by bucket
+## position, matching the mockup's SVG (not by count magnitude).
 func _build_histogram() -> void:
 	for child in _histogram_container.get_children():
 		child.queue_free()
@@ -231,11 +228,15 @@ func _build_histogram() -> void:
 		_histogram_container.add_child(bar)
 
 
+## Mockup colours buckets in three flat bands (early/mid/late) rather than a
+## continuous gradient -- match that rather than lerping.
 func _histogram_bucket_colour(bucket_index: int) -> Color:
-	var t := float(bucket_index) / float(HISTOGRAM_BUCKET_COUNT - 1) # 0 = earliest, 1 = latest
-	if t < 0.5:
-		return DesignTokens.LANE_COLOR_ORCHID.lerp(DesignTokens.COLOR_PINK, t / 0.5)
-	return DesignTokens.COLOR_PINK.lerp(DesignTokens.LANE_COLOR_CORAL, (t - 0.5) / 0.5)
+	var band := bucket_index * 3 / HISTOGRAM_BUCKET_COUNT
+	if band <= 0:
+		return DesignTokens.LANE_COLOR_ORCHID
+	elif band == 1:
+		return DesignTokens.COLOR_PINK
+	return DesignTokens.LANE_COLOR_CORAL
 
 
 func _on_retry_pressed() -> void:
@@ -248,4 +249,15 @@ func _on_next_pressed() -> void:
 
 
 func _on_back_pressed() -> void:
+	if not PlaySession.playtest_origin_scene.is_empty():
+		var origin := PlaySession.playtest_origin_scene
+		PlaySession.playtest_origin_scene = ""
+		SceneRouter.goto_scene(origin)
+		return
 	SceneRouter.goto_scene(SONG_SELECT_SCENE)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_on_back_pressed()

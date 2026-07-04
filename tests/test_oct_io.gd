@@ -16,6 +16,8 @@ func get_tests() -> Array[Dictionary]:
 		{"name": "oct_io_round_trip_metadata", "callable": test_round_trip_metadata},
 		{"name": "oct_io_round_trip_timing_point", "callable": test_round_trip_timing_point},
 		{"name": "oct_io_round_trip_notes", "callable": test_round_trip_notes},
+		{"name": "oct_io_chart_from_json_round_trip", "callable": test_chart_from_json_round_trip},
+		{"name": "oct_io_chart_from_json_rejects_malformed", "callable": test_chart_from_json_rejects_malformed},
 	]
 
 
@@ -130,4 +132,39 @@ func test_round_trip_notes() -> bool:
 
 	if ok:
 		print("[PASS] oct_io_round_trip_notes")
+	return ok
+
+
+## chart_from_json() is chart_to_json()'s read-side counterpart (used by
+## OctetBundle.read_bundle() to parse a chart it already has in memory, no
+## file round trip) -- confirms it recovers the same fields load_oct()
+## would from an equivalent file.
+func test_chart_from_json_round_trip() -> bool:
+	var chart := _build_example_chart()
+	var text := OctIO.chart_to_json(chart)
+	var loaded := OctIO.chart_from_json(text)
+
+	var ok := TestRunner._assert(loaded != null, "oct_io_chart_from_json_round_trip: chart_from_json returned null")
+	if loaded == null:
+		return false
+
+	ok = TestRunner._assert(loaded.metadata.title == "Song Title",
+		"oct_io_chart_from_json_round_trip: title mismatch, got '%s'" % loaded.metadata.title) and ok
+	ok = TestRunner._assert(loaded.timing_points.size() == 1 and is_equal_approx(loaded.timing_points[0].bpm, 174.0),
+		"oct_io_chart_from_json_round_trip: timing point mismatch") and ok
+	ok = TestRunner._assert(loaded.notes.size() == 3,
+		"oct_io_chart_from_json_round_trip: expected 3 notes, got %d" % loaded.notes.size()) and ok
+
+	if ok:
+		print("[PASS] oct_io_chart_from_json_round_trip")
+	return ok
+
+
+## Malformed JSON must return null (and push an error), never crash --
+## same failure contract as load_oct() on a bad file.
+func test_chart_from_json_rejects_malformed() -> bool:
+	var result := OctIO.chart_from_json("not valid json {{{")
+	var ok := TestRunner._assert(result == null, "oct_io_chart_from_json_rejects_malformed: expected null for malformed JSON")
+	if ok:
+		print("[PASS] oct_io_chart_from_json_rejects_malformed")
 	return ok

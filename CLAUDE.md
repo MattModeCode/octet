@@ -31,3 +31,16 @@ Use gStack for planning and execution. Run `/autoplan` for detailed, milestone-l
 ## 5. Version control
 
 **Manual — handled by Matthew.** Do **not** run `git init`, `git add`, `git commit`, or `git push`. Do **not** install any auto-commit or auto-push hook (no `Stop` hook). Do not create or modify git configuration. Just create and edit files in place; Matthew commits and uploads the repository himself, at his own pace. A `.gitignore` is present for hygiene when he does.
+
+## 6. Task orchestration
+
+Five persistent subagents live in `.claude/agents/`: **gameplay** (`game/` + `audio/` — play loop, `Conductor`, judging/grading, calibration), **editor** (`editor/` — audio analysis/DSP/FFT, beat grid, chart authoring against `core/chart.gd`'s schema, opus model for the algorithm-heavy work), **ui-screens** (`ui/` + all `.tscn` scenes + theme — owns the Claude Design MCP mockup-fidelity workflow), **netcode** (`net/` + Firebase + the Map Hub community backend), and **test-runner** (read-only — runs the headless suite, no Edit/Write). Use them as follows:
+
+- **Decompose before acting.** Break a multi-part request into subtasks and classify each as independent or dependent before dispatching anything.
+- **Independent subtasks → parallel dispatch.** Launch the relevant subagents in a single batch, and be explicit about how many you're launching and each one's file scope.
+- **Dependent subtasks → sequential chain.** Run one agent, then pass its summary as input to the next rather than re-deriving context yourself.
+- **Never let two subagents write the same file concurrently.** Check file scope before any parallel dispatch. Shared/global files — `project.godot`, autoload registration in it, `core/` source, `config/*.tres`, and the test registration in `tests/run_tests.gd`'s `_register_all_tests()` — are integrated by the **main session only**, never handed to a subagent for concurrent edits. Domain agents read `core/` freely but report needed changes upward instead of editing it.
+- **Summaries only.** Subagents return a concise summary of what changed and verify results — never a full transcript or full file/test output — to protect main-session context.
+- **Default agent per work type:** gameplay bugs/scoring/timing → `gameplay`; beat-mapping editor, BPM/offset detection, `.oct` chart authoring → `editor`; menu/screen layout, navigation, mockup-fidelity passes → `ui-screens`; online features, Firebase, Map Hub backend → `netcode`; "did this break anything" / running the suite → `test-runner`.
+- **Stay in the main session** for judgment calls, quick one-file edits, and tightly-coupled cross-file changes — especially anything touching the shared zone above or a `core/` data model whose change ripples across domains. Don't dispatch a subagent for work that's faster and safer to just do directly.
+- **Subagents cannot spawn subagents.** All decomposition and dispatch decisions stay in the main session; an agent that hits a subtask outside its scope reports back rather than delegating further.

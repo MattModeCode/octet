@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/components/pill_tab_bar.gd" id="1_pilltabbar"]
+
+[node name="PillTabBar" type="HBoxContainer"]
+theme_override_constants/separation = 6
+script = ExtResource("1_pilltabbar")

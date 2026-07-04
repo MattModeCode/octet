@@ -1,0 +1,257 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://ui/profile.gd" id="1_profilegd"]
+[ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_display.tres" id="3_fontdisplay"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono.tres" id="4_fontmono"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_ui.tres" id="5_fontui"]
+
+; -----------------------------------------------------------------------
+; Profile, imported from "Octet - Profile.dc.html" (Claude Design MCP,
+; project cc6f9e35-9183-4b42-8d8a-be6dfc135fe1) per CLAUDE.md's
+; design-fidelity rule. Colours baked as literal DesignTokens values --
+; .tscn parses before autoloads exist, same documented exception as
+; game/song_select.tscn:
+;   COLOR_INK             #0C0A0F -> Color(0.047, 0.039, 0.059, 1)
+;   COLOR_SURFACE         #16131B -> Color(0.086275, 0.07451, 0.105882, 1)
+;   COLOR_HAIRLINE        #2A2431 -> Color(0.164706, 0.141176, 0.192157, 1)
+;   COLOR_TEXT_PRIMARY    #F5F1F5 -> Color(0.960784, 0.945098, 0.960784, 1)
+;   COLOR_TEXT_SECONDARY  #A79FAE -> Color(0.654902, 0.623529, 0.682353, 1)
+;   COLOR_TEXT_MUTED      #6E6676 -> Color(0.431373, 0.4, 0.462745, 1)
+;   COLOR_PINK            #FF2D6E -> Color(1, 0.176471, 0.431373, 1)
+;
+; Known deviations from the mockup (see profile.gd's header comment): the
+; avatar is a flat pink circle rather than the mockup's pink-to-orchid
+; gradient (same documented Godot limitation as ui/main.tscn's avatar
+; chip); identity/rank/accuracy/pp are an honest "Guest"/"—" placeholder,
+; not the mockup's sample "kayvox" data; "Recent plays" is an honest empty
+; state (no play-history timestamps are persisted); a Back button was
+; added (not in the mockup, but necessary -- this screen is otherwise a
+; dead end from the main menu).
+; -----------------------------------------------------------------------
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_avatar"]
+bg_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 55
+corner_radius_top_right = 55
+corner_radius_bottom_right = 55
+corner_radius_bottom_left = 55
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat_chip"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 26.0
+content_margin_top = 16.0
+content_margin_right = 26.0
+content_margin_bottom = 16.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+content_margin_left = 28.0
+content_margin_top = 28.0
+content_margin_right = 28.0
+content_margin_bottom = 28.0
+
+[node name="Profile" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_profilegd")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047, 0.039, 0.059, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 64
+theme_override_constants/margin_top = 48
+theme_override_constants/margin_right = 64
+theme_override_constants/margin_bottom = 48
+
+[node name="MainVBox" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 36
+
+[node name="HeaderRow" type="HBoxContainer" parent="Margin/MainVBox"]
+layout_mode = 2
+theme_override_constants/separation = 28
+
+[node name="Avatar" type="PanelContainer" parent="Margin/MainVBox/HeaderRow"]
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_avatar")
+
+[node name="IdentityVBox" type="VBoxContainer" parent="Margin/MainVBox/HeaderRow"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 6
+
+[node name="NameLabel" type="Label" parent="Margin/MainVBox/HeaderRow/IdentityVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+theme_override_fonts/font = ExtResource("3_fontdisplay")
+theme_override_font_sizes/font_size = 30
+text = "Guest"
+
+[node name="SubtitleLabel" type="Label" parent="Margin/MainVBox/HeaderRow/IdentityVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+theme_override_fonts/font = ExtResource("5_fontui")
+theme_override_font_sizes/font_size = 14
+text = "Not signed in"
+
+[node name="StatsSpacer" type="Control" parent="Margin/MainVBox/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StatsRow" type="HBoxContainer" parent="Margin/MainVBox/HeaderRow"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 14
+
+[node name="RankStat" type="PanelContainer" parent="Margin/MainVBox/HeaderRow/StatsRow"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_stat_chip")
+
+[node name="RankVBox" type="VBoxContainer" parent="Margin/MainVBox/HeaderRow/StatsRow/RankStat"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="RankLabel" type="Label" parent="Margin/MainVBox/HeaderRow/StatsRow/RankStat/RankVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 11
+text = "GLOBAL RANK"
+horizontal_alignment = 1
+
+[node name="RankValue" type="Label" parent="Margin/MainVBox/HeaderRow/StatsRow/RankStat/RankVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 24
+text = "—"
+horizontal_alignment = 1
+
+[node name="AccuracyStat" type="PanelContainer" parent="Margin/MainVBox/HeaderRow/StatsRow"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_stat_chip")
+
+[node name="AccuracyVBox" type="VBoxContainer" parent="Margin/MainVBox/HeaderRow/StatsRow/AccuracyStat"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="AccuracyLabel" type="Label" parent="Margin/MainVBox/HeaderRow/StatsRow/AccuracyStat/AccuracyVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 11
+text = "AVG ACCURACY"
+horizontal_alignment = 1
+
+[node name="AccuracyValue" type="Label" parent="Margin/MainVBox/HeaderRow/StatsRow/AccuracyStat/AccuracyVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 24
+text = "—"
+horizontal_alignment = 1
+
+[node name="BackButton" type="Button" parent="Margin/MainVBox/HeaderRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+custom_minimum_size = Vector2(90, 0)
+text = "Back"
+
+[node name="PanelsRow" type="HBoxContainer" parent="Margin/MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 28
+
+[node name="BestScoresPanel" type="PanelContainer" parent="Margin/MainVBox/PanelsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="BestScoresVBox" type="VBoxContainer" parent="Margin/MainVBox/PanelsRow/BestScoresPanel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="BestScoresTitle" type="Label" parent="Margin/MainVBox/PanelsRow/BestScoresPanel/BestScoresVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+theme_override_fonts/font = ExtResource("3_fontdisplay")
+theme_override_font_sizes/font_size = 17
+text = "Best scores"
+
+[node name="BestScoresEmpty" type="Label" parent="Margin/MainVBox/PanelsRow/BestScoresPanel/BestScoresVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+text = "No scores yet — play a song to start setting bests."
+autowrap_mode = 3
+
+[node name="BestScoresList" type="VBoxContainer" parent="Margin/MainVBox/PanelsRow/BestScoresPanel/BestScoresVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="RecentPlaysPanel" type="PanelContainer" parent="Margin/MainVBox/PanelsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.4
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="RecentPlaysVBox" type="VBoxContainer" parent="Margin/MainVBox/PanelsRow/RecentPlaysPanel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="RecentPlaysTitle" type="Label" parent="Margin/MainVBox/PanelsRow/RecentPlaysPanel/RecentPlaysVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+theme_override_fonts/font = ExtResource("3_fontdisplay")
+theme_override_font_sizes/font_size = 17
+text = "Recent plays"
+
+[node name="RecentPlaysEmpty" type="Label" parent="Margin/MainVBox/PanelsRow/RecentPlaysPanel/RecentPlaysVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+text = "Play history isn't tracked yet — only your best score per song is saved (see Best scores)."
+autowrap_mode = 3

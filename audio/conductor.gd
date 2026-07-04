@@ -44,15 +44,15 @@ func _ready() -> void:
 ## AudioServer.get_time_since_last_mix()) into conductor song time in
 ## milliseconds, compensating for output latency and the audio calibration
 ## offset.
-static func compute_song_time_ms(raw_stream_sec: float, output_latency_sec: float, audio_offset_ms: float) -> float:
-	return (raw_stream_sec - output_latency_sec) * 1000.0 + audio_offset_ms
+static func compute_song_time_ms(raw_stream_sec: float, output_latency_sec: float, audio_offset_ms_value: float) -> float:
+	return (raw_stream_sec - output_latency_sec) * 1000.0 + audio_offset_ms_value
 
 
 ## Computes the signed judgment error (ms) between a tap and a note's target
 ## time, applying the input calibration offset to the tap time first.
 ## Negative = early, positive = late, zero = exactly on time.
-static func judgment_error_ms(tap_song_time_ms: float, note_target_ms: float, input_offset_ms: float) -> float:
-	return (tap_song_time_ms + input_offset_ms) - note_target_ms
+static func judgment_error_ms(tap_song_time_ms: float, note_target_ms: float, input_offset_ms_value: float) -> float:
+	return (tap_song_time_ms + input_offset_ms_value) - note_target_ms
 
 
 # ---------------------------------------------------------------------------

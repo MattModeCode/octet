@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=8 format=3]
+[gd_resource type="Theme" load_steps=37 format=3]
 
 [ext_resource type="FontVariation" path="res://assets/fonts/font_ui.tres" id="1"]
 
@@ -9,16 +9,30 @@
 ; (Theme resources are parsed before autoloads exist, so they cannot
 ; reference the DesignTokens singleton at load time). Keep these in sync
 ; by hand if the palette changes:
+;   COLOR_INK             #0C0A0F -> Color(0.047059, 0.039216, 0.058824, 1)
 ;   COLOR_SURFACE        #16131B -> Color(0.086275, 0.07451, 0.105882, 1)
 ;   COLOR_SURFACE_RAISED  #1F1A26 -> Color(0.121569, 0.101961, 0.14902, 1)
 ;   COLOR_HAIRLINE        #2A2431 -> Color(0.164706, 0.141176, 0.192157, 1)
 ;   COLOR_TEXT_PRIMARY    #F5F1F5 -> Color(0.960784, 0.945098, 0.960784, 1)
+;   COLOR_TEXT_SECONDARY  #A79FAE -> Color(0.654902, 0.623529, 0.682353, 1)
 ;   COLOR_TEXT_MUTED      #6E6676 -> Color(0.431373, 0.4, 0.462745, 1)
 ;   COLOR_PINK            #FF2D6E -> Color(1, 0.176471, 0.431373, 1)
+;   COLOR_AMBER           #FFC93C -> Color(1, 0.788235, 0.235294, 1)
+;   COLOR_MISS            #4A444F -> Color(0.290196, 0.266667, 0.309804, 1)
+;   COLOR_DANGER          #FF3B3B -> Color(1, 0.231373, 0.231373, 1)
 ;
-; Scope (Stage 0 foundation only): base font/font_size defaults, a Button
-; style, and a Panel/PanelContainer card style. Detailed HUD/editor theming
-; is later work (Stages 3-5) against imported mockups.
+; Scope: base font/font_size defaults, the default Button/Panel styles
+; (Stage 0 foundation, unchanged — screens already ship against these),
+; plus WP-N's shared component-sheet additions: PrimaryButton/
+; SecondaryButton/GhostButton/DestructiveButton type variations,
+; CardSelected/StatCard Panel variations, and default LineEdit/
+; OptionButton styling — all built from a live re-fetch of
+; "Octet - Components.dc.html" (see docs/FEATURE_FIXES_BREAKDOWN.md WP-N).
+; The component mockup uses 10px corner radius on buttons and 9px on
+; inputs/dropdowns; the pre-existing default Button/Panel styles (8px /
+; 11px) are left as-is to avoid an unreviewed visual change to every
+; screen already built against them — per-screen fidelity passes
+; (WP-G...L) can migrate onto the new variations deliberately.
 ; -----------------------------------------------------------------------
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
@@ -113,6 +127,422 @@ content_margin_top = 16.0
 content_margin_right = 16.0
 content_margin_bottom = 16.0
 
+; --- PrimaryButton (mockup: solid Octet pink, ink-dark label) ---------
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_primary_normal"]
+bg_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_primary_hover"]
+bg_color = Color(1, 0.242353, 0.476863, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_primary_pressed"]
+bg_color = Color(0.92, 0.162353, 0.396863, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_primary_disabled"]
+bg_color = Color(0.290196, 0.266667, 0.309804, 0.5)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_primary_focus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+; --- SecondaryButton (mockup: surface bg + hairline border, pink on hover) ---
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_secondary_normal"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_secondary_hover"]
+bg_color = Color(0.121569, 0.101961, 0.14902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_secondary_pressed"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_secondary_disabled"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 0.6)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 0.6)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_secondary_focus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+; --- GhostButton (mockup: no fill/border, muted label) ----------------
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ghost_normal"]
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ghost_hover"]
+bg_color = Color(0.121569, 0.101961, 0.14902, 0.6)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ghost_pressed"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 0.8)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ghost_disabled"]
+bg_color = Color(0, 0, 0, 0)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ghost_focus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+; --- DestructiveButton (mockup: solid danger red) ----------------------
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_destructive_normal"]
+bg_color = Color(1, 0.231373, 0.231373, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_destructive_hover"]
+bg_color = Color(1, 0.292902, 0.292902, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_destructive_pressed"]
+bg_color = Color(0.92, 0.212863, 0.212863, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_destructive_disabled"]
+bg_color = Color(0.290196, 0.266667, 0.309804, 0.5)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 28.0
+content_margin_top = 15.0
+content_margin_right = 28.0
+content_margin_bottom = 15.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_destructive_focus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+; --- LineEdit (mockup: text input / focused / disabled) ----------------
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lineedit_normal"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
+content_margin_left = 15.0
+content_margin_top = 13.0
+content_margin_right = 15.0
+content_margin_bottom = 13.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lineedit_focus"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
+content_margin_left = 15.0
+content_margin_top = 13.0
+content_margin_right = 15.0
+content_margin_bottom = 13.0
+shadow_color = Color(1, 0.176471, 0.431373, 0.2)
+shadow_size = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lineedit_readonly"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 0.6)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 0.6)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
+content_margin_left = 15.0
+content_margin_top = 13.0
+content_margin_right = 15.0
+content_margin_bottom = 13.0
+
+; --- OptionButton / dropdown --------------------------------------------
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_optionbutton_normal"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
+content_margin_left = 15.0
+content_margin_top = 13.0
+content_margin_right = 15.0
+content_margin_bottom = 13.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_optionbutton_hover"]
+bg_color = Color(0.121569, 0.101961, 0.14902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
+content_margin_left = 15.0
+content_margin_top = 13.0
+content_margin_right = 15.0
+content_margin_bottom = 13.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_optionbutton_pressed"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
+content_margin_left = 15.0
+content_margin_top = 13.0
+content_margin_right = 15.0
+content_margin_bottom = 13.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_optionbutton_disabled"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 0.6)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 0.6)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
+content_margin_left = 15.0
+content_margin_top = 13.0
+content_margin_right = 15.0
+content_margin_bottom = 13.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_optionbutton_focus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
+
+; --- Panel variations: CardSelected / StatCard --------------------------
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_selected"]
+bg_color = Color(0.121569, 0.101961, 0.14902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_right = 11
+corner_radius_bottom_left = 11
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat_card"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_right = 11
+corner_radius_bottom_left = 11
+content_margin_left = 20.0
+content_margin_top = 20.0
+content_margin_right = 20.0
+content_margin_bottom = 20.0
+
 [resource]
 default_font = ExtResource("1")
 default_font_size = 16
@@ -130,3 +560,81 @@ Button/colors/font_disabled_color = Color(0.431373, 0.4, 0.462745, 1)
 
 Panel/styles/panel = SubResource("StyleBoxFlat_panel_card")
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_panel_card")
+
+PrimaryButton/base_type = &"Button"
+PrimaryButton/styles/normal = SubResource("StyleBoxFlat_primary_normal")
+PrimaryButton/styles/hover = SubResource("StyleBoxFlat_primary_hover")
+PrimaryButton/styles/pressed = SubResource("StyleBoxFlat_primary_pressed")
+PrimaryButton/styles/focus = SubResource("StyleBoxFlat_primary_focus")
+PrimaryButton/styles/disabled = SubResource("StyleBoxFlat_primary_disabled")
+PrimaryButton/colors/font_color = Color(0.047059, 0.039216, 0.058824, 1)
+PrimaryButton/colors/font_hover_color = Color(0.047059, 0.039216, 0.058824, 1)
+PrimaryButton/colors/font_pressed_color = Color(0.047059, 0.039216, 0.058824, 1)
+PrimaryButton/colors/font_focus_color = Color(0.047059, 0.039216, 0.058824, 1)
+PrimaryButton/colors/font_disabled_color = Color(0.047059, 0.039216, 0.058824, 1)
+PrimaryButton/font_sizes/font_size = 15
+
+SecondaryButton/base_type = &"Button"
+SecondaryButton/styles/normal = SubResource("StyleBoxFlat_secondary_normal")
+SecondaryButton/styles/hover = SubResource("StyleBoxFlat_secondary_hover")
+SecondaryButton/styles/pressed = SubResource("StyleBoxFlat_secondary_pressed")
+SecondaryButton/styles/focus = SubResource("StyleBoxFlat_secondary_focus")
+SecondaryButton/styles/disabled = SubResource("StyleBoxFlat_secondary_disabled")
+SecondaryButton/colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+SecondaryButton/colors/font_hover_color = Color(1, 0.176471, 0.431373, 1)
+SecondaryButton/colors/font_pressed_color = Color(1, 0.176471, 0.431373, 1)
+SecondaryButton/colors/font_focus_color = Color(0.960784, 0.945098, 0.960784, 1)
+SecondaryButton/colors/font_disabled_color = Color(0.431373, 0.4, 0.462745, 1)
+SecondaryButton/font_sizes/font_size = 15
+
+GhostButton/base_type = &"Button"
+GhostButton/styles/normal = SubResource("StyleBoxFlat_ghost_normal")
+GhostButton/styles/hover = SubResource("StyleBoxFlat_ghost_hover")
+GhostButton/styles/pressed = SubResource("StyleBoxFlat_ghost_pressed")
+GhostButton/styles/focus = SubResource("StyleBoxFlat_ghost_focus")
+GhostButton/styles/disabled = SubResource("StyleBoxFlat_ghost_disabled")
+GhostButton/colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+GhostButton/colors/font_hover_color = Color(0.960784, 0.945098, 0.960784, 1)
+GhostButton/colors/font_pressed_color = Color(0.960784, 0.945098, 0.960784, 1)
+GhostButton/colors/font_focus_color = Color(0.654902, 0.623529, 0.682353, 1)
+GhostButton/colors/font_disabled_color = Color(0.431373, 0.4, 0.462745, 1)
+GhostButton/font_sizes/font_size = 15
+
+DestructiveButton/base_type = &"Button"
+DestructiveButton/styles/normal = SubResource("StyleBoxFlat_destructive_normal")
+DestructiveButton/styles/hover = SubResource("StyleBoxFlat_destructive_hover")
+DestructiveButton/styles/pressed = SubResource("StyleBoxFlat_destructive_pressed")
+DestructiveButton/styles/focus = SubResource("StyleBoxFlat_destructive_focus")
+DestructiveButton/styles/disabled = SubResource("StyleBoxFlat_destructive_disabled")
+DestructiveButton/colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+DestructiveButton/colors/font_hover_color = Color(0.960784, 0.945098, 0.960784, 1)
+DestructiveButton/colors/font_pressed_color = Color(0.960784, 0.945098, 0.960784, 1)
+DestructiveButton/colors/font_focus_color = Color(0.960784, 0.945098, 0.960784, 1)
+DestructiveButton/colors/font_disabled_color = Color(0.431373, 0.4, 0.462745, 1)
+DestructiveButton/font_sizes/font_size = 15
+
+LineEdit/styles/normal = SubResource("StyleBoxFlat_lineedit_normal")
+LineEdit/styles/focus = SubResource("StyleBoxFlat_lineedit_focus")
+LineEdit/styles/read_only = SubResource("StyleBoxFlat_lineedit_readonly")
+LineEdit/colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+LineEdit/colors/font_placeholder_color = Color(0.431373, 0.4, 0.462745, 1)
+LineEdit/colors/font_uneditable_color = Color(0.431373, 0.4, 0.462745, 1)
+LineEdit/colors/caret_color = Color(0.960784, 0.945098, 0.960784, 1)
+LineEdit/colors/selection_color = Color(1, 0.176471, 0.431373, 0.35)
+
+OptionButton/styles/normal = SubResource("StyleBoxFlat_optionbutton_normal")
+OptionButton/styles/hover = SubResource("StyleBoxFlat_optionbutton_hover")
+OptionButton/styles/pressed = SubResource("StyleBoxFlat_optionbutton_pressed")
+OptionButton/styles/focus = SubResource("StyleBoxFlat_optionbutton_focus")
+OptionButton/styles/disabled = SubResource("StyleBoxFlat_optionbutton_disabled")
+OptionButton/colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+OptionButton/colors/font_hover_color = Color(0.960784, 0.945098, 0.960784, 1)
+OptionButton/colors/font_pressed_color = Color(0.960784, 0.945098, 0.960784, 1)
+OptionButton/colors/font_disabled_color = Color(0.431373, 0.4, 0.462745, 1)
+OptionButton/colors/font_hover_pressed_color = Color(0.960784, 0.945098, 0.960784, 1)
+
+CardSelected/base_type = &"PanelContainer"
+CardSelected/styles/panel = SubResource("StyleBoxFlat_card_selected")
+
+StatCard/base_type = &"PanelContainer"
+StatCard/styles/panel = SubResource("StyleBoxFlat_stat_card")

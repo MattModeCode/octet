@@ -1,0 +1,21 @@
+{
+  "maps": [
+    {
+      "id": "thats-why-i-gave-up-on-music",
+      "title": "That's Why I Gave Up On Music",
+      "artist": "Unknown Artist",
+      "mapper": "Auto (WP-C onset pipeline)",
+      "bpm": 126,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/thats-why-i-gave-up-on-music.octet",
+      "cover_url": "",
+      "difficulties": [
+        {"name": "Easy", "star_rating": 1.8},
+        {"name": "Normal", "star_rating": 3.2},
+        {"name": "Hard", "star_rating": 4.7}
+      ],
+      "download_count": 0,
+      "rating": 0.0,
+      "updated_at": "2026-07-03"
+    }
+  ]
+}

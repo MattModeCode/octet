@@ -5,17 +5,23 @@ extends Control
 ## left, a detail panel (preview, difficulty chips, your-best, Play) on the
 ## right.
 ##
-## Data layer is unchanged from the Stage 3 version: still scans
-## tests/fixtures/*.oct + user://songs/*.oct via OctIO, still hands off to
-## PlaySession/SceneRouter exactly the same way. The only new logic is
+## Data layer hands off to PlaySession/SceneRouter same as ever; the chart
+## scan itself now lives in core/song_library.gd (WP-F), shared with
+## gameplay.gd's real-audio load and ui/main.gd's ambient music so all three
+## agree on what "the available songs" means. The scene-local logic left is
 ## grouping same-song .oct files (title+artist) into difficulty variants so
 ## the mockup's per-song row + difficulty-chip UI has something to bind to,
-## plus simple search/sort over that grouping.
+## simple search/sort over that grouping, and (WP-F) playing a short preview
+## of the selected chart's real audio via a plain AudioStreamPlayer.
 
-const FIXTURE_DIR: String = "res://tests/fixtures"
-const USER_SONGS_DIR: String = "user://songs"
 const GAMEPLAY_SCENE: String = "res://game/gameplay.tscn"
 const CALIBRATION_SCENE: String = "res://audio/calibration.tscn"
+
+## Loops the selected song's preview back to preview_time_ms after this many
+## seconds of playback, so the preview stays a short snippet rather than
+## playing out to the end of the song (WP-F).
+const PREVIEW_LOOP_SECONDS: float = 12.0
+const PREVIEW_VOLUME_DB: float = -6.0
 
 enum SortMode { DIFFICULTY, RECENT, TITLE }
 
@@ -27,11 +33,13 @@ const ROW_COVER_SIZE := Vector2(64, 64)
 @onready var _sort_row: HBoxContainer = %SortRow
 @onready var _list_container: VBoxContainer = %ListContainer
 @onready var _preview_box: PanelContainer = %PreviewBox
+@onready var _progress_fill: ColorRect = %ProgressFill
 @onready var _time_label: Label = %TimeLabel
 @onready var _title_label: Label = %TitleLabel
-@onready var _sub_label: Label = %SubLabel
+@onready var _sub_label: RichTextLabel = %SubLabel
 @onready var _difficulty_chips_row: HBoxContainer = %DifficultyChipsRow
 @onready var _your_best_card: PanelContainer = %YourBestCard
+@onready var _your_best_overline: Label = %YourBestOverline
 @onready var _score_value: Label = %ScoreValue
 @onready var _acc_value: Label = %AccValue
 @onready var _grade_value: Label = %GradeValue
@@ -51,11 +59,18 @@ var _sort_mode: SortMode = SortMode.TITLE
 var _search_text: String = ""
 
 var _row_panels: Array[PanelContainer] = []
+## Parallel to _row_panels -- the duration Label in each row, so the
+## selected row's duration can be recoloured pink like the mockup.
+var _row_duration_labels: Array[Label] = []
 var _chip_buttons: Array[Button] = []
 var _sort_buttons: Array[Button] = []
 
 var _selected_song_index: int = -1
 var _selected_difficulty_index: int = -1
+
+var _preview_player: AudioStreamPlayer
+var _preview_loop_timer: Timer
+var _preview_start_sec: float = 0.0
 
 var _row_style_normal: StyleBoxFlat
 var _row_style_selected: StyleBoxFlat
@@ -71,6 +86,8 @@ func _ready() -> void:
 	_build_shared_styles()
 	_stripe_texture = _build_stripe_texture()
 	_apply_preview_placeholder_style()
+	_style_play_button()
+	_build_preview_player()
 
 	_ensure_user_songs_dir()
 	_scan_charts()
@@ -91,29 +108,12 @@ func _ready() -> void:
 
 
 func _ensure_user_songs_dir() -> void:
-	if not DirAccess.dir_exists_absolute(USER_SONGS_DIR):
-		DirAccess.make_dir_recursive_absolute(USER_SONGS_DIR)
+	if not DirAccess.dir_exists_absolute(SongLibrary.USER_SONGS_DIR):
+		DirAccess.make_dir_recursive_absolute(SongLibrary.USER_SONGS_DIR)
 
 
 func _scan_charts() -> void:
-	_entries.clear()
-	var scan_dirs: Array[String] = [FIXTURE_DIR, USER_SONGS_DIR]
-	for dir_path in scan_dirs:
-		var dir := DirAccess.open(dir_path)
-		if dir == null:
-			continue
-		dir.list_dir_begin()
-		var file_name := dir.get_next()
-		while file_name != "":
-			if not dir.current_is_dir() and file_name.get_extension() == "oct":
-				var full_path := dir_path.path_join(file_name)
-				var chart := OctIO.load_oct(full_path)
-				if chart != null:
-					var mtime := FileAccess.get_modified_time(full_path)
-					_entries.append({"path": full_path, "chart": chart, "mtime": mtime})
-			file_name = dir.get_next()
-		dir.list_dir_end()
-
+	_entries = SongLibrary.scan_charts()
 	_entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return String(a.chart.metadata.title) < String(b.chart.metadata.title))
 
@@ -190,8 +190,11 @@ func _build_shared_styles() -> void:
 	_sort_style_active.content_margin_top = 12.0
 	_sort_style_active.content_margin_bottom = 12.0
 
+	# Inactive tabs stay transparent so the SortPill wrapper's own
+	# bg/border reads as one seamless segmented control, matching the
+	# mockup -- only the active tab gets a solid (amber) fill.
 	_sort_style_inactive = _sort_style_active.duplicate()
-	_sort_style_inactive.bg_color = _surface_color()
+	_sort_style_inactive.bg_color = Color(0, 0, 0, 0)
 
 
 ## Approximates the mockup's `repeating-linear-gradient(45deg,...)`
@@ -219,6 +222,107 @@ func _apply_preview_placeholder_style() -> void:
 	_preview_box.add_child(stripe_rect)
 	_preview_box.move_child(stripe_rect, 0)
 	_preview_box.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+
+
+## The mockup's Play button is a bold pink CTA (bg #FF2D6E, ink text) --
+## distinct from the generic dark theme Button style every other button on
+## this screen correctly uses, so it needs an explicit override rather than
+## relying on the shared theme.
+func _style_play_button() -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = _pink_color()
+	normal.corner_radius_top_left = 12
+	normal.corner_radius_top_right = 12
+	normal.corner_radius_bottom_right = 12
+	normal.corner_radius_bottom_left = 12
+
+	var hover := normal.duplicate()
+	hover.bg_color = normal.bg_color.lightened(0.08)
+	var pressed := normal.duplicate()
+	pressed.bg_color = normal.bg_color.darkened(0.08)
+	var disabled := normal.duplicate()
+	disabled.bg_color = normal.bg_color.darkened(0.4)
+
+	_play_button.add_theme_stylebox_override("normal", normal)
+	_play_button.add_theme_stylebox_override("hover", hover)
+	_play_button.add_theme_stylebox_override("pressed", pressed)
+	_play_button.add_theme_stylebox_override("disabled", disabled)
+	_play_button.add_theme_font_override("font", _display_font())
+	_play_button.add_theme_font_size_override("font_size", 20)
+	_play_button.add_theme_color_override("font_color", _ink_color())
+	_play_button.add_theme_color_override("font_hover_color", _ink_color())
+	_play_button.add_theme_color_override("font_pressed_color", _ink_color())
+	_play_button.add_theme_color_override("font_disabled_color", _ink_color())
+
+
+## Plain AudioStreamPlayer, not Conductor -- a selection preview has no
+## judgment timing to derive, so Conductor's calibration-aware clock would be
+## pure overhead here (WP-F's own guidance). _preview_loop_timer restarts
+## playback at the chart's preview_time_ms every PREVIEW_LOOP_SECONDS so the
+## preview stays a short snippet instead of playing out the whole song.
+func _build_preview_player() -> void:
+	_preview_player = AudioStreamPlayer.new()
+	_preview_player.volume_db = PREVIEW_VOLUME_DB
+	_preview_player.finished.connect(_on_preview_finished)
+	add_child(_preview_player)
+
+	_preview_loop_timer = Timer.new()
+	_preview_loop_timer.wait_time = PREVIEW_LOOP_SECONDS
+	_preview_loop_timer.timeout.connect(_on_preview_loop_timeout)
+	add_child(_preview_loop_timer)
+
+
+func _start_preview(diff_entry: Dictionary) -> void:
+	_preview_loop_timer.stop()
+	var chart: Chart = diff_entry.chart
+	var stream := SongLibrary.load_chart_audio(String(diff_entry.path), chart)
+	if stream == null:
+		_preview_player.stop()
+		return
+	_preview_start_sec = chart.metadata.preview_time_ms / 1000.0
+	_preview_player.stream = stream
+	_preview_player.play(_preview_start_sec)
+	_preview_loop_timer.start()
+
+
+func _stop_preview() -> void:
+	_preview_loop_timer.stop()
+	_preview_player.stop()
+
+
+func _on_preview_loop_timeout() -> void:
+	if _preview_player.playing:
+		_preview_player.seek(_preview_start_sec)
+
+
+## Safety net for a chart whose audio is shorter than PREVIEW_LOOP_SECONDS
+## past preview_time_ms -- without this the player would just go silent
+## until the loop timer next fires.
+func _on_preview_finished() -> void:
+	if not _preview_loop_timer.is_stopped():
+		_preview_player.play(_preview_start_sec)
+
+
+## Drives the preview playback bar's live elapsed time and pink progress
+## fill from the real AudioStreamPlayer position (WP-F), replacing the
+## static "0:00 / duration" placeholder the mockup's overlay implies is
+## live-updating.
+func _process(_delta: float) -> void:
+	if not _preview_player.playing:
+		return
+	if _selected_song_index < 0 or _selected_difficulty_index < 0:
+		return
+	var diffs: Array = _songs[_selected_song_index].difficulties
+	if _selected_difficulty_index >= diffs.size():
+		return
+	var chart: Chart = diffs[_selected_difficulty_index].chart
+	var duration_ms := _chart_duration_ms(chart)
+	if duration_ms <= 0:
+		return
+
+	var elapsed_ms := int(_preview_player.get_playback_position() * 1000.0)
+	_time_label.text = "%s / %s" % [_format_duration(elapsed_ms), _format_duration(duration_ms)]
+	_progress_fill.anchor_right = clampf(elapsed_ms / float(duration_ms), 0.0, 1.0)
 
 
 func _build_sort_row() -> void:
@@ -296,6 +400,7 @@ func _rebuild_list() -> void:
 	for panel in _row_panels:
 		panel.queue_free()
 	_row_panels.clear()
+	_row_duration_labels.clear()
 
 	var visible_songs := _filtered_sorted_songs()
 	var previously_selected_song: Dictionary = {}
@@ -347,11 +452,18 @@ func _build_song_row(song: Dictionary, song_index: int) -> PanelContainer:
 	title_label.add_theme_color_override("font_color", _text_primary_color())
 	text_col.add_child(title_label)
 
-	var meta_label := Label.new()
-	meta_label.text = "%s  ·  mapped by %s" % [String(song.artist), String(song.mapper)]
-	meta_label.add_theme_font_override("font", _ui_font())
-	meta_label.add_theme_font_size_override("font_size", 13)
-	meta_label.add_theme_color_override("font_color", _text_secondary_color())
+	# RichTextLabel (not Label) so the "· mapped by" connector can be muted
+	# separately from the artist/mapper names either side of it, matching
+	# the mockup's two-tone span styling.
+	var meta_label := RichTextLabel.new()
+	meta_label.bbcode_enabled = true
+	meta_label.fit_content = true
+	meta_label.scroll_active = false
+	meta_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	meta_label.text = "%s [color=#6E6676]· mapped by[/color] %s" % [String(song.artist), String(song.mapper)]
+	meta_label.add_theme_font_override("normal_font", _ui_font())
+	meta_label.add_theme_font_size_override("normal_font_size", 13)
+	meta_label.add_theme_color_override("default_color", _text_secondary_color())
 	text_col.add_child(meta_label)
 
 	var star_badge := Label.new()
@@ -393,6 +505,7 @@ func _build_song_row(song: Dictionary, song_index: int) -> PanelContainer:
 	panel.add_child(button)
 	panel.move_child(button, 0)
 
+	_row_duration_labels.append(duration_label)
 	return panel
 
 
@@ -418,6 +531,10 @@ func _refresh_row_selection_styles() -> void:
 			continue
 		var is_selected := _songs.find(visible_songs[i]) == _selected_song_index
 		_row_panels[i].add_theme_stylebox_override("panel", _row_style_selected if is_selected else _row_style_normal)
+		# Mockup highlights the selected row's duration in pink; every
+		# other row stays secondary grey.
+		_row_duration_labels[i].add_theme_color_override(
+			"font_color", _pink_color() if is_selected else _text_secondary_color())
 
 
 func _update_detail_panel() -> void:
@@ -426,6 +543,7 @@ func _update_detail_panel() -> void:
 	_chip_buttons.clear()
 
 	if _selected_song_index < 0:
+		_stop_preview()
 		_title_label.text = "No charts found"
 		_sub_label.text = "Drop .oct files into %s/songs to add more." % OS.get_user_data_dir()
 		_your_best_card.visible = false
@@ -437,16 +555,23 @@ func _update_detail_panel() -> void:
 	var diffs: Array = song.difficulties
 	var selected_diff: Dictionary = diffs[_selected_difficulty_index]
 	var chart: Chart = selected_diff.chart
+	_start_preview(selected_diff)
 
 	_title_label.text = String(song.title)
 	var bpm := 0.0
 	if not chart.timing_points.is_empty():
 		bpm = chart.timing_points[0].bpm
 	var duration_str := _format_duration(_chart_duration_ms(chart))
-	_sub_label.text = "%s  ·  mapped by %s  ·  %d BPM  ·  %s" % [
+	# Two-tone to match the mockup: artist/mapper names in the default
+	# secondary colour, the "· mapped by" connector and the trailing
+	# "BPM · duration" stats muted.
+	_sub_label.text = "%s [color=#6E6676]· mapped by[/color] %s [color=#6E6676]· %d BPM · %s[/color]" % [
 		String(song.artist), String(song.mapper), roundi(bpm), duration_str,
 	]
+	# _process() takes over once preview playback actually starts (WP-F);
+	# this is just the pre-playback fallback so the label isn't blank.
 	_time_label.text = "0:00 / %s" % duration_str
+	_progress_fill.anchor_right = 0.0
 
 	for i in diffs.size():
 		var diff_chart: Chart = diffs[i].chart
@@ -464,12 +589,18 @@ func _update_detail_panel() -> void:
 		_difficulty_chips_row.add_child(chip)
 		_chip_buttons.append(chip)
 
-	# No score-persistence layer exists yet — an honest "no best yet" state
-	# rather than the mockup's sample numbers, per CLAUDE.md's rule against
-	# faking data.
-	_score_value.text = "—"
-	_acc_value.text = "—"
-	_grade_value.text = "—"
+	# Mockup's overline includes the selected difficulty ("YOUR BEST — HARD").
+	_your_best_overline.text = "YOUR BEST — %s" % String(chart.metadata.difficulty_name).to_upper()
+
+	var best := ScoreStore.best_for(String(selected_diff.path))
+	if best.is_empty():
+		_score_value.text = "—"
+		_acc_value.text = "—"
+		_grade_value.text = "—"
+	else:
+		_score_value.text = "%d" % int(best.score)
+		_acc_value.text = "%.2f%%" % (float(best.accuracy) * 100.0)
+		_grade_value.text = String(best.grade)
 	_your_best_card.visible = true
 
 	_play_button.disabled = false
@@ -494,15 +625,34 @@ func _on_play_pressed() -> void:
 	PlaySession.chart_list = paths
 	PlaySession.chart_index = play_index
 	PlaySession.mods = GameplayMods.new(_no_fail_check.button_pressed, false)
+	# A normal play from Song Select is never a playtest -- clear any stale
+	# origin flag left over from an earlier editor playtest so Results'
+	# Back button doesn't mistakenly route this run back to the editor.
+	PlaySession.playtest_origin_scene = ""
+	_stop_preview()
 	SceneRouter.goto_scene_pushed(GAMEPLAY_SCENE)
 
 
 func _on_calibrate_pressed() -> void:
+	_stop_preview()
 	SceneRouter.goto_scene_pushed(CALIBRATION_SCENE)
 
 
 func _on_back_pressed() -> void:
-	SceneRouter.go_back()
+	# Song select is only ever reached from the main menu, and the main menu
+	# navigates here with the non-pushing goto_scene() (so the wordmark/logo
+	# stays a stable "home" rather than accumulating stack entries) -- so
+	# go_back() would find an empty stack and silently no-op. Route home
+	# explicitly instead, mirroring game/results.gd's hardcoded-destination
+	# pattern.
+	_stop_preview()
+	SceneRouter.goto_scene("res://ui/main.tscn")
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_on_back_pressed()
 
 
 func _chart_duration_ms(chart: Chart) -> int:

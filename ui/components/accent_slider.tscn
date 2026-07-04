@@ -1,0 +1,35 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ui/components/accent_slider.gd" id="1_accentslider"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono.tres" id="2_fontmono"]
+
+[node name="AccentSlider" type="Control"]
+custom_minimum_size = Vector2(280, 33)
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 1
+script = ExtResource("1_accentslider")
+
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 19.0
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+theme_override_fonts/font = ExtResource("2_fontmono")
+theme_override_font_sizes/font_size = 11
+text = "LABEL"
+
+[node name="ValueLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -120.0
+offset_bottom = 19.0
+size_flags_horizontal = 3
+horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+theme_override_fonts/font = ExtResource("2_fontmono")
+theme_override_font_sizes/font_size = 11
+text = "0"

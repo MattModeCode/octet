@@ -28,10 +28,12 @@
 ; Known deviations from the mockup (documented per CLAUDE.md's
 ; design-fidelity rule): cover/preview swatches are square-cornered, not
 ; rounded (Godot TextureRect has no corner-radius clip without a shader);
-; the "YOUR BEST" card and profile-adjacent sample data are placeholders
-; ("--") rather than the mockup's sample numbers, since no score
-; persistence exists yet (not faking data per the same rule); the "⋯"
-; overflow button has no defined action in the brief and is inert.
+; the "⋯" overflow button has no defined action in the brief and is inert;
+; the No-Fail checkbox / Calibrate / Back utility row has no mockup
+; equivalent (the mockup doesn't show this screen's necessary navigation
+; and mod-toggle affordances) and is kept as pre-existing functional chrome.
+; "YOUR BEST" (WP-E) now reads real ScoreStore data and shows "—" only when
+; no run has been recorded for that chart yet -- not a placeholder.
 ; -----------------------------------------------------------------------
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_list_pane"]
@@ -54,6 +56,48 @@ content_margin_left = 16.0
 content_margin_top = 12.0
 content_margin_right = 16.0
 content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_search_field_flat"]
+bg_color = Color(0, 0, 0, 0)
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_search_icon"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.431373, 0.4, 0.462745, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sort_pill"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_playback_bar"]
+bg_color = Color(0.047059, 0.039216, 0.058824, 0.6)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 14.0
+content_margin_top = 0.0
+content_margin_right = 14.0
+content_margin_bottom = 0.0
 
 [node name="SongSelect" type="Control"]
 layout_mode = 3
@@ -107,18 +151,38 @@ theme_override_constants/margin_bottom = 16
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="SearchField" type="LineEdit" parent="MainRow/ListPane/ListPaneVBox/SearchSortRow/SearchSortHBox"]
+[node name="SearchWrap" type="PanelContainer" parent="MainRow/ListPane/ListPaneVBox/SearchSortRow/SearchSortHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_search_field")
+
+[node name="SearchInnerHBox" type="HBoxContainer" parent="MainRow/ListPane/ListPaneVBox/SearchSortRow/SearchSortHBox/SearchWrap"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SearchIcon" type="Panel" parent="MainRow/ListPane/ListPaneVBox/SearchSortRow/SearchSortHBox/SearchWrap/SearchInnerHBox"]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_search_icon")
+
+[node name="SearchField" type="LineEdit" parent="MainRow/ListPane/ListPaneVBox/SearchSortRow/SearchSortHBox/SearchWrap/SearchInnerHBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/normal = SubResource("StyleBoxFlat_search_field")
+theme_override_styles/normal = SubResource("StyleBoxFlat_search_field_flat")
+theme_override_styles/focus = SubResource("StyleBoxFlat_search_field_flat")
 theme_override_fonts/font = ExtResource("5_fontui")
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
 theme_override_colors/font_placeholder_color = Color(0.431373, 0.4, 0.462745, 1)
 placeholder_text = "Search maps, artists, mappers…"
 
-[node name="SortRow" type="HBoxContainer" parent="MainRow/ListPane/ListPaneVBox/SearchSortRow/SearchSortHBox"]
+[node name="SortPill" type="PanelContainer" parent="MainRow/ListPane/ListPaneVBox/SearchSortRow/SearchSortHBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_sort_pill")
+
+[node name="SortRow" type="HBoxContainer" parent="MainRow/ListPane/ListPaneVBox/SearchSortRow/SearchSortHBox/SortPill"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 0
@@ -172,6 +236,7 @@ theme_override_constants/margin_left = 24
 theme_override_constants/margin_top = 0
 theme_override_constants/margin_right = 24
 theme_override_constants/margin_bottom = 24
+theme_override_styles/panel = SubResource("StyleBoxFlat_playback_bar")
 
 [node name="PlaybackHBox" type="HBoxContainer" parent="MainRow/DetailPane/DetailVBox/PreviewBox/PlaybackBar"]
 layout_mode = 2
@@ -188,6 +253,14 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
 color = Color(0.164706, 0.141176, 0.192157, 1)
+
+[node name="ProgressFill" type="ColorRect" parent="MainRow/DetailPane/DetailVBox/PreviewBox/PlaybackBar/PlaybackHBox/ProgressTrack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.0
+anchor_bottom = 1.0
+color = Color(1, 0.176471, 0.431373, 1)
 
 [node name="TimeLabel" type="Label" parent="MainRow/DetailPane/DetailVBox/PreviewBox/PlaybackBar/PlaybackHBox"]
 unique_name_in_owner = true
@@ -209,13 +282,18 @@ theme_override_font_sizes/font_size = 34
 theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
 text = "No charts found"
 
-[node name="SubLabel" type="Label" parent="MainRow/DetailPane/DetailVBox/TitleArtistBlock"]
+[node name="SubLabel" type="RichTextLabel" parent="MainRow/DetailPane/DetailVBox/TitleArtistBlock"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_fonts/font = ExtResource("5_fontui")
-theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_fonts/normal_font = ExtResource("5_fontui")
+theme_override_font_sizes/normal_font_size = 16
+theme_override_colors/default_color = Color(0.654902, 0.623529, 0.682353, 1)
+bbcode_enabled = true
 text = "Drop .oct files into user://songs to add more."
+fit_content = true
+scroll_active = false
 
 [node name="DifficultyChipsRow" type="HBoxContainer" parent="MainRow/DetailPane/DetailVBox"]
 unique_name_in_owner = true

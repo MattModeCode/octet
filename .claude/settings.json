@@ -1,6 +1,5 @@
 {
   "enabledPlugins": {
-    "claude-mem@thedotmack": false,
     "headroom@headroom-marketplace": true
   }
 }
