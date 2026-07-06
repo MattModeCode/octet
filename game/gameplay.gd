@@ -41,8 +41,8 @@ const AUDIO_BEATS_PER_BAR: int = 4
 @onready var _health_fill: TextureRect = %HealthBarFill
 @onready var _playfield: Control = %PlayfieldView
 @onready var _reduced_flash_label: Label = %ReducedFlashLabel
+@onready var _autopilot_badge: Control = %AutopilotBadge
 @onready var _failed_label: Label = %FailedLabel
-@onready var _quit_button: Button = %QuitButton
 @onready var _pause_overlay: Control = %PauseOverlay
 @onready var _resume_button: Button = %ResumeButton
 @onready var _restart_button: Button = %RestartButton
@@ -50,6 +50,11 @@ const AUDIO_BEATS_PER_BAR: int = 4
 
 var _engine: JudgeEngine
 var _chart: Chart
+## Effective GameplayConfig for this run -- Config.gameplay directly unless
+## GameplayMods.window_scale widens the windows (Easy mode), in which case
+## this is a scaled duplicate. Never mutate Config.gameplay itself: it's a
+## single shared Resource reused across every run (core/config.gd).
+var _gameplay: GameplayConfig
 ## Path of the .oct this run is scoring against, for ScoreStore (WP-E). Left
 ## empty for an editor playtest (PlaySession.pending_chart is in-memory,
 ## never saved to a path) so _finish() knows not to record/compare a best
@@ -58,12 +63,18 @@ var _chart_path: String = ""
 var _chart_end_ms: float = 0.0
 var _finished: bool = false
 var _paused: bool = false
+## Set true the instant health hits zero (no-fail off); gates input/update
+## during the brief "FAILED" hold before _finish() routes to results. The
+## engine itself never emits song_failed when no-fail is on (judge_engine.gd),
+## so a no-fail run never sets this and always plays to the chart's natural
+## end -- that's the whole rule, enforced upstream rather than here.
+var _failing: bool = false
 
 
 func _ready() -> void:
 	_reduced_flash_label.text = "REDUCED FLASH: %s" % ("ON" if _reduced_flash() else "OFF")
+	_autopilot_badge.visible = PlaySession.mods.autoplay
 	_playfield.set_accessibility(_reduced_flash(), _reduced_motion())
-	_quit_button.pressed.connect(_on_quit_pressed)
 	_resume_button.pressed.connect(_on_resume_pressed)
 	_restart_button.pressed.connect(_on_restart_pressed)
 	_pause_quit_button.pressed.connect(_on_quit_pressed)
@@ -81,14 +92,22 @@ func _ready() -> void:
 
 	_populate_song_info()
 
-	_engine = JudgeEngine.new(_chart, Config.gameplay, Config.scoring, PlaySession.mods)
+	_gameplay = Config.gameplay
+	var window_scale := PlaySession.mods.window_scale
+	if not is_equal_approx(window_scale, 1.0):
+		_gameplay = Config.gameplay.duplicate()
+		_gameplay.window_perfect_ms *= window_scale
+		_gameplay.window_great_ms *= window_scale
+		_gameplay.window_good_ms *= window_scale
+
+	_engine = JudgeEngine.new(_chart, _gameplay, Config.scoring, PlaySession.mods)
 	_engine.judged.connect(_on_note_judged)
 	_engine.combo_changed.connect(_on_combo_changed)
 	_engine.health_changed.connect(_on_health_changed)
 	_engine.song_failed.connect(_on_song_failed)
 
 	_chart_end_ms = _compute_chart_end_ms()
-	_playfield.set_chart(_chart.notes, Config.gameplay.window_good_ms)
+	_playfield.set_chart(_chart.notes, _gameplay.window_good_ms)
 	_refresh_hud()
 	_update_health_bar(_engine.health)
 
@@ -98,10 +117,11 @@ func _ready() -> void:
 	if stream == null:
 		stream = _build_backing_track()
 	Conductor.play(stream)
+	Conductor.set_playback_rate(PlaySession.mods.rate)
 
 
 func _process(_delta: float) -> void:
-	if _engine == null or _finished or _paused:
+	if _engine == null or _finished or _paused or _failing:
 		return
 
 	var song_ms := Conductor.song_time_ms()
@@ -117,11 +137,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		if _paused:
 			_on_resume_pressed()
-		elif not _finished:
+		elif not _finished and not _failing:
 			_pause()
 		return
 
-	if _engine == null or _finished or _paused:
+	if _engine == null or _finished or _paused or _failing or PlaySession.mods.autoplay:
 		return
 	var song_ms := Conductor.song_time_ms()
 	for lane in LANE_COUNT:
@@ -137,7 +157,7 @@ func _compute_chart_end_ms() -> float:
 	for note in _chart.notes:
 		var note_end := float(note.end_time_ms if note.type == "hold" else note.time_ms)
 		latest = maxf(latest, note_end)
-	return latest + Config.gameplay.window_good_ms
+	return latest + _gameplay.window_good_ms
 
 
 ## Legacy/fallback backing track (WP-F): a metronome click track long enough
@@ -158,10 +178,12 @@ func _build_backing_track() -> AudioStreamWAV:
 
 
 func _finish() -> void:
+	if _finished:
+		return
 	_finished = true
 	Conductor.stop()
 	PlaySession.last_engine = _engine
-	PlaySession.last_run_is_new_best = ScoreStore.record_result(_chart_path, _engine)
+	PlaySession.last_run_is_new_best = ScoreStore.record_result(_chart_path, _engine, _chart.metadata)
 	SceneRouter.goto_scene_pushed(RESULTS_SCENE)
 
 
@@ -224,8 +246,18 @@ func _on_health_changed(health: float) -> void:
 	_update_health_bar(health)
 
 
+## No-fail is enforced entirely upstream: JudgeEngine._apply_judgment() never
+## emits song_failed when PlaySession.mods.no_fail is on (judge_engine.gd), so
+## this handler -- and the early exit to results below -- only ever runs on a
+## real fail. A no-fail run keeps calling _process() every frame uninterrupted
+## and reaches _finish() only via the natural chart-end path.
 func _on_song_failed() -> void:
+	if _failing or _finished:
+		return
+	_failing = true
 	_failed_label.visible = true
+	Conductor.stop()
+	get_tree().create_timer(Config.gameplay.fail_exit_delay_sec).timeout.connect(_finish)
 
 
 func _refresh_hud() -> void:
@@ -235,7 +267,7 @@ func _refresh_hud() -> void:
 
 
 func _update_health_bar(health: float) -> void:
-	var fraction := clampf(health / Config.gameplay.health_start, 0.0, 1.0)
+	var fraction := clampf(health / _gameplay.health_start, 0.0, 1.0)
 	_health_fill.size.x = HEALTH_FILL_MAX_WIDTH * fraction
 
 

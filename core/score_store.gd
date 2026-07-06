@@ -30,7 +30,10 @@ func _ready() -> void:
 
 
 ## Returns the persisted best for chart_path, or {} if none recorded yet.
-## Shape: {"score": int, "accuracy": float, "grade": String, "max_combo": int}.
+## Shape: {"score": int, "accuracy": float, "grade": String, "max_combo": int,
+## "difficulty_name": String, "star_rating": float}. The last two are absent
+## on entries recorded before the fan-out difficulty picker existed -- callers
+## should read them with Dictionary.get() and a sensible default.
 func best_for(chart_path: String) -> Dictionary:
 	return _data.entries.get(chart_path, {})
 
@@ -45,12 +48,19 @@ func all_entries() -> Dictionary:
 	return _data.entries.duplicate()
 
 
-## Records a finished run's result against chart_path if it's ranked and
-## beats (or is the first entry for) the stored best. Returns true when it
+## Records a finished run's result against chart_path if it's ranked, was not
+## failed, and beats (or is the first entry for) the stored best. A failed
+## run never counts as a completed entry -- it's excluded regardless of
+## score, same as an unranked (No-Fail/Practice) run. Returns true when it
 ## set a new best, so callers (game/gameplay.gd) can flag Results' NEW BEST
 ## badge without Results having to re-derive the comparison itself.
-func record_result(chart_path: String, engine: JudgeEngine) -> bool:
-	if chart_path.is_empty() or not engine.is_ranked():
+##
+## metadata is the chart's ChartMetadata -- its difficulty_name/star_rating
+## are persisted into the entry (fan-out difficulty picker) so a saved score
+## can display its difficulty level without re-reading the .oct (which may
+## since have moved or been deleted).
+func record_result(chart_path: String, engine: JudgeEngine, metadata: ChartMetadata) -> bool:
+	if chart_path.is_empty() or not engine.is_ranked() or engine.is_failed():
 		return false
 
 	var previous: Dictionary = _data.entries.get(chart_path, {})
@@ -62,6 +72,8 @@ func record_result(chart_path: String, engine: JudgeEngine) -> bool:
 		"accuracy": engine.accuracy(),
 		"grade": engine.grade(),
 		"max_combo": engine.max_combo,
+		"difficulty_name": metadata.difficulty_name,
+		"star_rating": metadata.star_rating,
 	}
 	ResourceSaver.save(_data, USER_SCORES_PATH)
 	return true

@@ -94,6 +94,7 @@ func _ready() -> void:
 	_build_snap_row()
 	_build_tool_rail()
 	_wire_signals()
+	_metronome_player.bus = "SFX"
 	_metronome_player.stream = Metronome.build_single_click()
 
 	if EditorSession.returning_from_playtest:

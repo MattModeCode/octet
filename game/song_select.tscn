@@ -21,19 +21,26 @@
 ;   COLOR_PINK            #FF2D6E -> Color(1, 0.176471, 0.431373, 1)
 ;   COLOR_AMBER           #FFC93C -> Color(1, 0.788235, 0.235294, 1)
 ;
-; Rows, difficulty chips, and cover-art placeholder textures are built by
-; song_select.gd since they're data-driven; the panes/header/preview-box
-; skeleton below is static per the mockup.
+; Song rows, difficulty sub-rows, and cover-art placeholder textures are
+; built by song_select.gd since they're data-driven; the panes/header/
+; preview-box skeleton below is static per the mockup.
 ;
 ; Known deviations from the mockup (documented per CLAUDE.md's
 ; design-fidelity rule): cover/preview swatches are square-cornered, not
-; rounded (Godot TextureRect has no corner-radius clip without a shader);
-; the "⋯" overflow button has no defined action in the brief and is inert;
-; the No-Fail checkbox / Calibrate / Back utility row has no mockup
-; equivalent (the mockup doesn't show this screen's necessary navigation
-; and mod-toggle affordances) and is kept as pre-existing functional chrome.
+; rounded (Godot TextureRect has no corner-radius clip without a shader).
+; The old No-Fail checkbox / Calibrate / Back utility row and the inert "⋯"
+; overflow button (no defined mockup action) have been removed: Calibrate
+; moved to ui/settings.tscn, Back is Esc-only (ui_cancel), and every run
+; modifier (No-Fail plus the newer Double/Half/Sudden Death/Easy/Autopilot)
+; now lives on ui/modifiers.tscn, reached via the ModifiersButton below.
 ; "YOUR BEST" (WP-E) now reads real ScoreStore data and shows "—" only when
 ; no run has been recorded for that chart yet -- not a placeholder.
+;
+; User-directed deviation: the mockup's right-panel difficulty *chips* have
+; been replaced by an inline fan-out in the left list (clicking a song
+; expands "Title — Difficulty" sub-rows beneath it, each carrying the star
+; badge the parent row used to show). DifficultyChipsRow is gone; the
+; picker now lives entirely in ListContainer's data-driven rows.
 ; -----------------------------------------------------------------------
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_list_pane"]
@@ -295,11 +302,6 @@ text = "Drop .oct files into user://songs to add more."
 fit_content = true
 scroll_active = false
 
-[node name="DifficultyChipsRow" type="HBoxContainer" parent="MainRow/DetailPane/DetailVBox"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 10
-
 [node name="YourBestCard" type="PanelContainer" parent="MainRow/DetailPane/DetailVBox"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -377,34 +379,16 @@ theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(1, 0.176471, 0.431373, 1)
 text = "—"
 
-[node name="UtilityRow" type="HBoxContainer" parent="MainRow/DetailPane/DetailVBox"]
-layout_mode = 2
-theme_override_constants/separation = 18
-
-[node name="NoFailCheck" type="CheckBox" parent="MainRow/DetailPane/DetailVBox/UtilityRow"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
-text = "No-Fail"
-
-[node name="UtilitySpacer" type="Control" parent="MainRow/DetailPane/DetailVBox/UtilityRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="CalibrateButton" type="Button" parent="MainRow/DetailPane/DetailVBox/UtilityRow"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Calibrate"
-
-[node name="BackButton" type="Button" parent="MainRow/DetailPane/DetailVBox/UtilityRow"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Back"
-
 [node name="PlayRow" type="HBoxContainer" parent="MainRow/DetailPane/DetailVBox"]
 layout_mode = 2
 size_flags_vertical = 8
 theme_override_constants/separation = 14
+
+[node name="ModifiersButton" type="Button" parent="MainRow/DetailPane/DetailVBox/PlayRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 64)
+text = "Modifiers"
 
 [node name="PlayButton" type="Button" parent="MainRow/DetailPane/DetailVBox/PlayRow"]
 unique_name_in_owner = true
@@ -412,9 +396,3 @@ layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 64)
 text = "Play"
-
-[node name="OverflowButton" type="Button" parent="MainRow/DetailPane/DetailVBox/PlayRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-text = "⋯"

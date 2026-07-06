@@ -1,0 +1,268 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://ui/modifiers.gd" id="1_modifiersgd"]
+[ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://ui/radial_background.tscn" id="3_radialbg"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_display.tres" id="4_fontdisplay"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_ui.tres" id="5_fontui"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono_overline.tres" id="6_fontmonooverline"]
+
+; -----------------------------------------------------------------------
+; Modifiers screen -- consolidates every run-modifying toggle (previously
+; scattered as a lone No-Fail checkbox in game/song_select.tscn) plus the
+; new Double/Half speed, Easy, Sudden Death, and Autopilot mods. No Claude
+; Design MCP mockup exists for this screen (same situation as
+; ui/settings.tscn -- checked project cc6f9e35-9183-4b42-8d8a-be6dfc135fe1's
+; file list, no "Modifiers" entry), so this mirrors ui/settings.tscn's
+; established card/button/spacing conventions per CLAUDE.md's
+; design-fidelity rule rather than inventing a new pattern.
+;
+; Colours baked as literal DesignTokens values -- .tscn parses before
+; autoloads exist, same documented exception as ui/settings.tscn:
+;   COLOR_INK             #0C0A0F -> Color(0.047, 0.039, 0.059, 1)
+;   COLOR_SURFACE         #16131B -> Color(0.086275, 0.07451, 0.105882, 1)
+;   COLOR_HAIRLINE        #2A2431 -> Color(0.164706, 0.141176, 0.192157, 1)
+;   COLOR_TEXT_PRIMARY    #F5F1F5 -> Color(0.960784, 0.945098, 0.960784, 1)
+;   COLOR_TEXT_MUTED      #6E6676 -> Color(0.431373, 0.4, 0.462745, 1)
+;   COLOR_PINK            #FF2D6E -> Color(1, 0.176471, 0.431373, 1)
+;
+; The Speed row's three buttons share a ButtonGroup (radio behaviour) so
+; Half/1x/Double are structurally mutually exclusive -- Godot enforces
+; "only one pressed" for free, no manual bookkeeping needed. CheckButton
+; rows are NOT themed here for the same reason as settings.tscn: Theme/
+; .tscn resources parse before DesignTokens exists, so modifiers.gd builds
+; their StyleBoxFlats at runtime (see _style_toggle_row_controls()).
+; -----------------------------------------------------------------------
+
+[sub_resource type="ButtonGroup" id="ButtonGroup_speed"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_right = 11
+corner_radius_bottom_left = 11
+content_margin_left = 28.0
+content_margin_top = 24.0
+content_margin_right = 28.0
+content_margin_bottom = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_back_button"]
+bg_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 24.0
+content_margin_top = 16.0
+content_margin_right = 24.0
+content_margin_bottom = 16.0
+
+[node name="Modifiers" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_modifiersgd")
+
+[node name="RadialBackground" parent="." instance=ExtResource("3_radialbg")]
+layout_mode = 1
+glow_center = Vector2(0.5, 0.0)
+glow_extent = Vector2(0.6, 0.55)
+
+[node name="RootVBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="TopSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="RootVBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 30
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "Modifiers"
+horizontal_alignment = 1
+
+[node name="TitleCardSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+
+[node name="SpeedCard" type="PanelContainer" parent="RootVBox"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="SpeedCardVBox" type="VBoxContainer" parent="RootVBox/SpeedCard"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="SpeedOverline" type="Label" parent="RootVBox/SpeedCard/SpeedCardVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_fontmonooverline")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "SPEED"
+
+[node name="SpeedRow" type="HBoxContainer" parent="RootVBox/SpeedCard/SpeedCardVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HalfButton" type="Button" parent="RootVBox/SpeedCard/SpeedCardVBox/SpeedRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_group = SubResource("ButtonGroup_speed")
+theme_override_fonts/font = ExtResource("5_fontui")
+theme_override_font_sizes/font_size = 15
+text = "Half"
+
+[node name="NormalButton" type="Button" parent="RootVBox/SpeedCard/SpeedCardVBox/SpeedRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_pressed = true
+button_group = SubResource("ButtonGroup_speed")
+theme_override_fonts/font = ExtResource("5_fontui")
+theme_override_font_sizes/font_size = 15
+text = "1×"
+
+[node name="DoubleButton" type="Button" parent="RootVBox/SpeedCard/SpeedCardVBox/SpeedRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_group = SubResource("ButtonGroup_speed")
+theme_override_fonts/font = ExtResource("5_fontui")
+theme_override_font_sizes/font_size = 15
+text = "Double"
+
+[node name="SpeedTogglesSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="TogglesCard" type="PanelContainer" parent="RootVBox"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="TogglesCardVBox" type="VBoxContainer" parent="RootVBox/TogglesCard"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="TogglesOverline" type="Label" parent="RootVBox/TogglesCard/TogglesCardVBox"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_fontmonooverline")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "MODIFIERS"
+
+[node name="EasyRow" type="HBoxContainer" parent="RootVBox/TogglesCard/TogglesCardVBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="EasyLabel" type="Label" parent="RootVBox/TogglesCard/TogglesCardVBox/EasyRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("5_fontui")
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "Easy"
+
+[node name="EasyCheckButton" type="CheckButton" parent="RootVBox/TogglesCard/TogglesCardVBox/EasyRow"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="AutopilotRow" type="HBoxContainer" parent="RootVBox/TogglesCard/TogglesCardVBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="AutopilotLabel" type="Label" parent="RootVBox/TogglesCard/TogglesCardVBox/AutopilotRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("5_fontui")
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "Autopilot"
+
+[node name="AutopilotCheckButton" type="CheckButton" parent="RootVBox/TogglesCard/TogglesCardVBox/AutopilotRow"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SuddenDeathRow" type="HBoxContainer" parent="RootVBox/TogglesCard/TogglesCardVBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="SuddenDeathLabel" type="Label" parent="RootVBox/TogglesCard/TogglesCardVBox/SuddenDeathRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("5_fontui")
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "Sudden Death"
+
+[node name="SuddenDeathCheckButton" type="CheckButton" parent="RootVBox/TogglesCard/TogglesCardVBox/SuddenDeathRow"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="NoFailRow" type="HBoxContainer" parent="RootVBox/TogglesCard/TogglesCardVBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="NoFailLabel" type="Label" parent="RootVBox/TogglesCard/TogglesCardVBox/NoFailRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("5_fontui")
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "No-Fail"
+
+[node name="NoFailCheckButton" type="CheckButton" parent="RootVBox/TogglesCard/TogglesCardVBox/NoFailRow"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="TogglesActionsSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="ActionsColumn" type="VBoxContainer" parent="RootVBox"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 16
+
+[node name="BackButton" type="Button" parent="RootVBox/ActionsColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_back_button")
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.047, 0.039, 0.059, 1)
+text = "Back"
+
+[node name="BottomSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_vertical = 3

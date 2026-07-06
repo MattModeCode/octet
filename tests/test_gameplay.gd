@@ -27,6 +27,10 @@ func get_tests() -> Array[Dictionary]:
 		{"name": "gameplay_no_fail_mod", "callable": test_no_fail_mod},
 		{"name": "gameplay_grade_thresholds", "callable": test_grade_thresholds},
 		{"name": "gameplay_fixture_oct_round_trip", "callable": test_fixture_oct_round_trip},
+		{"name": "gameplay_autopilot_mod", "callable": test_autopilot_mod},
+		{"name": "gameplay_sudden_death_mod", "callable": test_sudden_death_mod},
+		{"name": "gameplay_easy_window_mod", "callable": test_easy_window_mod},
+		{"name": "gameplay_mods_init_backcompat", "callable": test_gameplay_mods_init_backcompat},
 	]
 
 
@@ -232,4 +236,105 @@ func test_fixture_oct_round_trip() -> bool:
 	ok = TestRunner._assert(engine.is_all_perfect(), "gameplay_fixture_oct_round_trip: expected all perfect") and ok
 	if ok:
 		print("[PASS] gameplay_fixture_oct_round_trip")
+	return ok
+
+
+## GameplayMods.autoplay: driving update() alone (no scripted lane presses)
+## across a tap + a hold should auto-hit every head/tail exactly on time --
+## all-PERFECT, full combo, zero Misses, and unranked.
+func test_autopilot_mod() -> bool:
+	var mods := GameplayMods.new(false, false, GameplayMods.RATE_NORMAL, 1.0, false, true) # autoplay = true
+	var engine := _engine([_tap(0, 1000), _tap(1, 2000), _hold(2, 3000, 3250)], mods)
+
+	engine.update(1000.0) # auto-hits the tap at lane 0.
+	engine.update(2000.0) # auto-hits the tap at lane 1.
+	engine.update(3000.0) # auto-hits the hold head at lane 2 (starts holding).
+	engine.update(3251.0) # auto-fires both ticks and auto-releases the tail.
+
+	var ok := true
+	ok = TestRunner._assert(engine.is_full_combo(), "gameplay_autopilot_mod: expected full combo") and ok
+	ok = TestRunner._assert(engine.is_all_perfect(), "gameplay_autopilot_mod: expected all perfect") and ok
+	ok = TestRunner._assert(int(engine.judgment_counts.get(Judgment.Kind.MISS, 0)) == 0,
+		"gameplay_autopilot_mod: expected zero misses, got %d" % int(engine.judgment_counts.get(Judgment.Kind.MISS, 0))) and ok
+	ok = TestRunner._assert(not engine.is_ranked(), "gameplay_autopilot_mod: expected is_ranked() false under Autopilot") and ok
+	if ok:
+		print("[PASS] gameplay_autopilot_mod")
+	return ok
+
+
+## GameplayMods.sudden_death: a single real discrete Miss should fail the run
+## immediately, independent of health (health after one Miss is 94, nowhere
+## near 0) -- proving the fail comes from Sudden Death, not the health floor.
+func test_sudden_death_mod() -> bool:
+	var mods := GameplayMods.new(false, false, GameplayMods.RATE_NORMAL, 1.0, true, false) # sudden_death = true
+	var engine := _engine([_tap(0, 1000)], mods)
+	engine.update(2000.0) # past the Good window (1000 + 110) -- auto-Miss.
+
+	var ok := true
+	ok = TestRunner._assert(engine.is_failed(), "gameplay_sudden_death_mod: expected is_failed() true after one Miss") and ok
+	ok = TestRunner._assert(is_equal_approx(engine.health, 94.0),
+		"gameplay_sudden_death_mod: expected health 94.0 (not floored), got %s" % str(engine.health)) and ok
+	ok = TestRunner._assert(not engine.is_ranked(), "gameplay_sudden_death_mod: expected is_ranked() false under Sudden Death") and ok
+	if ok:
+		print("[PASS] gameplay_sudden_death_mod")
+	return ok
+
+
+## GameplayMods.window_scale (Easy mode): a press 150ms late is outside the
+## default Good window (110ms) -- ignored entirely, no judgment recorded --
+## but inside the scaled window (110 * EASY_WINDOW_SCALE = 176ms), where it
+## buckets as Good (great window scales to 96ms, so 150ms lands past Great
+## but within Good).
+func test_easy_window_mod() -> bool:
+	var scaled_gameplay := GameplayConfig.new()
+	scaled_gameplay.window_perfect_ms *= GameplayMods.EASY_WINDOW_SCALE
+	scaled_gameplay.window_great_ms *= GameplayMods.EASY_WINDOW_SCALE
+	scaled_gameplay.window_good_ms *= GameplayMods.EASY_WINDOW_SCALE
+
+	var default_engine := JudgeEngine.new(_chart([_tap(0, 1000)]), GameplayConfig.new(), ScoringConfig.new())
+	default_engine.on_lane_press(0, 1150.0) # 150ms late -- outside the default 110ms Good window.
+
+	var scaled_engine := JudgeEngine.new(_chart([_tap(0, 1000)]), scaled_gameplay, ScoringConfig.new())
+	scaled_engine.on_lane_press(0, 1150.0) # same lateness -- inside the scaled 176ms Good window.
+
+	var ok := true
+	ok = TestRunner._assert(default_engine.judgment_counts.is_empty(),
+		"gameplay_easy_window_mod: expected the late press to be ignored at default windows") and ok
+	ok = TestRunner._assert(int(scaled_engine.judgment_counts.get(Judgment.Kind.GOOD, 0)) == 1,
+		"gameplay_easy_window_mod: expected the late press to bucket as Good under Easy's scaled windows") and ok
+	ok = TestRunner._assert(scaled_engine.combo == 1,
+		"gameplay_easy_window_mod: expected combo 1 (Good doesn't break combo), got %d" % scaled_engine.combo) and ok
+	if ok:
+		print("[PASS] gameplay_easy_window_mod")
+	return ok
+
+
+## GameplayMods._init backward compatibility: the pre-existing 0/1/2-arg
+## construction sites (editor/editor_main.gd, game/song_select.gd's old
+## call) must still produce fully-vanilla new fields and the same
+## is_ranked() behaviour as before this class was extended.
+func test_gameplay_mods_init_backcompat() -> bool:
+	var ok := true
+
+	var vanilla := GameplayMods.new()
+	ok = TestRunner._assert(vanilla.is_ranked(), "gameplay_mods_init_backcompat: GameplayMods.new() expected ranked") and ok
+	ok = TestRunner._assert(is_equal_approx(vanilla.rate, GameplayMods.RATE_NORMAL),
+		"gameplay_mods_init_backcompat: GameplayMods.new() expected rate 1.0") and ok
+	ok = TestRunner._assert(not vanilla.autoplay and not vanilla.sudden_death,
+		"gameplay_mods_init_backcompat: GameplayMods.new() expected autoplay/sudden_death both false") and ok
+
+	var no_fail_only := GameplayMods.new(true)
+	ok = TestRunner._assert(no_fail_only.no_fail and not no_fail_only.practice,
+		"gameplay_mods_init_backcompat: GameplayMods.new(true) expected no_fail true, practice false") and ok
+	ok = TestRunner._assert(not no_fail_only.is_ranked(),
+		"gameplay_mods_init_backcompat: GameplayMods.new(true) expected unranked") and ok
+
+	var no_fail_and_practice := GameplayMods.new(true, true)
+	ok = TestRunner._assert(no_fail_and_practice.no_fail and no_fail_and_practice.practice,
+		"gameplay_mods_init_backcompat: GameplayMods.new(true, true) expected both true") and ok
+	ok = TestRunner._assert(not no_fail_and_practice.is_ranked(),
+		"gameplay_mods_init_backcompat: GameplayMods.new(true, true) expected unranked") and ok
+
+	if ok:
+		print("[PASS] gameplay_mods_init_backcompat")
 	return ok

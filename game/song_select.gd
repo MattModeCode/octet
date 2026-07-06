@@ -1,21 +1,27 @@
 extends Control
-## Song select, rebuilt to match "Octet - Song Select.dc.html" (Claude
-## Design MCP, project cc6f9e35-9183-4b42-8d8a-be6dfc135fe1) per CLAUDE.md's
-## design-fidelity rule. Two-pane layout: a searchable/sortable list on the
-## left, a detail panel (preview, difficulty chips, your-best, Play) on the
-## right.
+## Song select, originally built to match "Octet - Song Select.dc.html"
+## (Claude Design MCP, project cc6f9e35-9183-4b42-8d8a-be6dfc135fe1) per
+## CLAUDE.md's design-fidelity rule. Two-pane layout: a searchable/sortable
+## list on the left, a detail panel (preview, your-best, Play) on the right.
+##
+## User-directed deviation from the mockup: the right panel's difficulty
+## *chips* have been replaced by an inline fan-out in the left list --
+## clicking a song expands it in place into one sub-row per difficulty
+## ("Title — Difficulty", ChartMetadata.format_display_name), each carrying
+## the star badge a song row no longer shows (a row now covers several
+## difficulties, so a single star would misstate which one it's for).
 ##
 ## Data layer hands off to PlaySession/SceneRouter same as ever; the chart
-## scan itself now lives in core/song_library.gd (WP-F), shared with
+## scan itself lives in core/song_library.gd (WP-F), shared with
 ## gameplay.gd's real-audio load and ui/main.gd's ambient music so all three
 ## agree on what "the available songs" means. The scene-local logic left is
 ## grouping same-song .oct files (title+artist) into difficulty variants so
-## the mockup's per-song row + difficulty-chip UI has something to bind to,
-## simple search/sort over that grouping, and (WP-F) playing a short preview
-## of the selected chart's real audio via a plain AudioStreamPlayer.
+## the fan-out picker has something real to bind to, simple search/sort over
+## that grouping, and (WP-F) playing a short preview of the selected chart's
+## real audio via a plain AudioStreamPlayer.
 
 const GAMEPLAY_SCENE: String = "res://game/gameplay.tscn"
-const CALIBRATION_SCENE: String = "res://audio/calibration.tscn"
+const MODIFIERS_SCENE: String = "res://ui/modifiers.tscn"
 
 ## Loops the selected song's preview back to preview_time_ms after this many
 ## seconds of playback, so the preview stays a short snippet rather than
@@ -27,6 +33,9 @@ enum SortMode { DIFFICULTY, RECENT, TITLE }
 
 const COVER_TILE_SIZE := 64
 const ROW_COVER_SIZE := Vector2(64, 64)
+## Left indent for a difficulty sub-row, so its title text lines up under the
+## parent song row's text column (64px cover + 18px hbox separation).
+const SUBROW_INDENT := 82.0
 
 @onready var _background: ColorRect = $Background
 @onready var _search_field: LineEdit = %SearchField
@@ -37,17 +46,13 @@ const ROW_COVER_SIZE := Vector2(64, 64)
 @onready var _time_label: Label = %TimeLabel
 @onready var _title_label: Label = %TitleLabel
 @onready var _sub_label: RichTextLabel = %SubLabel
-@onready var _difficulty_chips_row: HBoxContainer = %DifficultyChipsRow
 @onready var _your_best_card: PanelContainer = %YourBestCard
 @onready var _your_best_overline: Label = %YourBestOverline
 @onready var _score_value: Label = %ScoreValue
 @onready var _acc_value: Label = %AccValue
 @onready var _grade_value: Label = %GradeValue
-@onready var _no_fail_check: CheckBox = %NoFailCheck
+@onready var _modifiers_button: Button = %ModifiersButton
 @onready var _play_button: Button = %PlayButton
-@onready var _overflow_button: Button = %OverflowButton
-@onready var _calibrate_button: Button = %CalibrateButton
-@onready var _back_button: Button = %BackButton
 
 ## Raw scan results: each {"path": String, "chart": Chart}. Order here is
 ## PlaySession's chart_list order (preserved from the Stage 3 behaviour).
@@ -58,11 +63,21 @@ var _songs: Array[Dictionary] = []
 var _sort_mode: SortMode = SortMode.TITLE
 var _search_text: String = ""
 
-var _row_panels: Array[PanelContainer] = []
-## Parallel to _row_panels -- the duration Label in each row, so the
-## selected row's duration can be recoloured pink like the mockup.
+## Parallel to _filtered_sorted_songs()'s current result -- one panel per
+## visible song row.
+var _song_row_panels: Array[PanelContainer] = []
+## Parallel to _song_row_panels -- the duration Label in each row, so the
+## selected/expanded song's duration can be recoloured pink like the mockup.
 var _row_duration_labels: Array[Label] = []
-var _chip_buttons: Array[Button] = []
+## The expanded (selected) song's difficulty sub-row panels, in difficulty
+## order -- rebuilt every time selection or the visible list changes.
+var _subrow_panels: Array[PanelContainer] = []
+## Parallel to _subrow_panels -- each sub-row's difficulty-name Label, so the
+## chosen difficulty's label can be recoloured like the old chip style.
+var _subrow_labels: Array[Label] = []
+## Parallel to _subrow_panels -- the difficulty index each sub-row renders,
+## so _refresh_row_selection_styles() can tell which one is selected.
+var _subrow_diff_indices: Array[int] = []
 var _sort_buttons: Array[Button] = []
 
 var _selected_song_index: int = -1
@@ -74,8 +89,6 @@ var _preview_start_sec: float = 0.0
 
 var _row_style_normal: StyleBoxFlat
 var _row_style_selected: StyleBoxFlat
-var _chip_style_normal: StyleBoxFlat
-var _chip_style_selected: StyleBoxFlat
 var _sort_style_active: StyleBoxFlat
 var _sort_style_inactive: StyleBoxFlat
 var _stripe_texture: ImageTexture
@@ -92,17 +105,13 @@ func _ready() -> void:
 	_ensure_user_songs_dir()
 	_scan_charts()
 	_group_songs()
+	_restore_selection_from_session()
 	_build_sort_row()
 	_rebuild_list()
 
 	_search_field.text_changed.connect(_on_search_changed)
 	_play_button.pressed.connect(_on_play_pressed)
-	_calibrate_button.pressed.connect(_on_calibrate_pressed)
-	_back_button.pressed.connect(_on_back_pressed)
-	# The mockup's overflow "⋯" has no defined action anywhere in the brief
-	# — left inert rather than invented, per CLAUDE.md's design-fidelity
-	# rule against guessing behaviour that isn't specified.
-	_overflow_button.disabled = true
+	_modifiers_button.pressed.connect(_on_modifiers_pressed)
 
 	_update_detail_panel()
 
@@ -119,8 +128,8 @@ func _scan_charts() -> void:
 
 
 ## Groups same-song entries (matched by title+artist) into difficulty
-## variants, so the mockup's "one row, several difficulty chips" UI has
-## something real to bind to even though the underlying scan is still
+## variants, so the "one row, fan out into several difficulty sub-rows" UI
+## has something real to bind to even though the underlying scan is still
 ## flat per-.oct-file (no chart-grouping format change).
 func _group_songs() -> void:
 	_songs.clear()
@@ -159,29 +168,6 @@ func _build_shared_styles() -> void:
 	_row_style_selected.bg_color = _surface_raised_color()
 	_row_style_selected.border_width_left = 3
 	_row_style_selected.border_color = _pink_color()
-
-	_chip_style_normal = StyleBoxFlat.new()
-	_chip_style_normal.bg_color = _surface_raised_color()
-	_chip_style_normal.border_width_left = 1
-	_chip_style_normal.border_width_top = 1
-	_chip_style_normal.border_width_right = 1
-	_chip_style_normal.border_width_bottom = 1
-	_chip_style_normal.border_color = _hairline_color()
-	_chip_style_normal.corner_radius_top_left = 8
-	_chip_style_normal.corner_radius_top_right = 8
-	_chip_style_normal.corner_radius_bottom_right = 8
-	_chip_style_normal.corner_radius_bottom_left = 8
-	_chip_style_normal.content_margin_left = 18.0
-	_chip_style_normal.content_margin_right = 18.0
-	_chip_style_normal.content_margin_top = 10.0
-	_chip_style_normal.content_margin_bottom = 10.0
-
-	_chip_style_selected = _chip_style_normal.duplicate()
-	_chip_style_selected.border_width_left = 2
-	_chip_style_selected.border_width_top = 2
-	_chip_style_selected.border_width_right = 2
-	_chip_style_selected.border_width_bottom = 2
-	_chip_style_selected.border_color = _pink_color()
 
 	_sort_style_active = StyleBoxFlat.new()
 	_sort_style_active.bg_color = _amber_color()
@@ -262,6 +248,7 @@ func _style_play_button() -> void:
 ## preview stays a short snippet instead of playing out the whole song.
 func _build_preview_player() -> void:
 	_preview_player = AudioStreamPlayer.new()
+	_preview_player.bus = "Music"
 	_preview_player.volume_db = PREVIEW_VOLUME_DB
 	_preview_player.finished.connect(_on_preview_finished)
 	add_child(_preview_player)
@@ -396,31 +383,113 @@ func _max_mtime(song: Dictionary) -> int:
 	return best
 
 
+## Rebuilds the visible song list from scratch (search/sort changed, or the
+## initial build). Resolves which song stays/becomes selected first, then
+## defers the actual node building to _render_rows() -- kept separate so
+## _select_song()/_on_subrow_pressed() can re-render without re-running this
+## selection-preserving logic.
 func _rebuild_list() -> void:
-	for panel in _row_panels:
-		panel.queue_free()
-	_row_panels.clear()
-	_row_duration_labels.clear()
-
 	var visible_songs := _filtered_sorted_songs()
+
 	var previously_selected_song: Dictionary = {}
 	if _selected_song_index >= 0 and _selected_song_index < _songs.size():
 		previously_selected_song = _songs[_selected_song_index]
 
-	for song in visible_songs:
-		var row_index_in_songs := _songs.find(song)
-		_row_panels.append(_build_song_row(song, row_index_in_songs))
-
-	if not visible_songs.is_empty():
-		var keep_selection := not previously_selected_song.is_empty() and visible_songs.has(previously_selected_song)
-		if not keep_selection:
-			_select_song(_songs.find(visible_songs[0]))
-		else:
-			_refresh_row_selection_styles()
-	else:
+	if visible_songs.is_empty():
 		_selected_song_index = -1
 		_selected_difficulty_index = -1
-		_update_detail_panel()
+	else:
+		var keep_selection := not previously_selected_song.is_empty() and visible_songs.has(previously_selected_song)
+		if not keep_selection:
+			_set_selected_song(_songs.find(visible_songs[0]))
+
+	_render_rows(visible_songs)
+	_update_detail_panel()
+
+
+## Restores the song/difficulty selection saved by a previous visit to this
+## screen (PlaySession.song_select_selected_path), so leaving and returning
+## via the Modifiers screen -- which fully tears down and rebuilds this scene
+## (SceneRouter.goto_scene_pushed/go_back use change_scene_to_file()) -- keeps
+## the player on the song they had selected rather than resetting to the
+## first one. No-op if nothing was saved yet or the saved path no longer
+## matches any scanned chart (e.g. it was deleted).
+func _restore_selection_from_session() -> void:
+	var target_path := PlaySession.song_select_selected_path
+	if target_path.is_empty():
+		return
+	for song_index in _songs.size():
+		var diffs: Array = _songs[song_index].difficulties
+		for diff_index in diffs.size():
+			if String(diffs[diff_index].path) == target_path:
+				_selected_song_index = song_index
+				_selected_difficulty_index = diff_index
+				return
+
+
+## Sets which song is selected and defaults its difficulty to the
+## highest-star variant. Pure state update -- callers re-render afterwards.
+func _set_selected_song(song_index: int) -> void:
+	_selected_song_index = song_index
+	if song_index >= 0 and song_index < _songs.size():
+		var diffs: Array = _songs[song_index].difficulties
+		_selected_difficulty_index = diffs.size() - 1 # default to the highest-star difficulty
+	else:
+		_selected_difficulty_index = -1
+
+
+## Frees and rebuilds every row panel for visible_songs: one song row each,
+## plus -- for whichever song is currently selected -- its difficulty
+## sub-rows fanned out directly beneath it (the click-to-fan-out picker that
+## replaces the old right-panel difficulty chips).
+func _render_rows(visible_songs: Array) -> void:
+	for panel in _song_row_panels:
+		panel.queue_free()
+	for panel in _subrow_panels:
+		panel.queue_free()
+	_song_row_panels.clear()
+	_row_duration_labels.clear()
+	_subrow_panels.clear()
+	_subrow_labels.clear()
+	_subrow_diff_indices.clear()
+
+	for song in visible_songs:
+		var song_index: int = _songs.find(song)
+		_song_row_panels.append(_build_song_row(song, song_index))
+		if song_index == _selected_song_index:
+			var diffs: Array = song.difficulties
+			for diff_index in diffs.size():
+				_subrow_panels.append(_build_difficulty_subrow(song, diff_index))
+				_subrow_diff_indices.append(diff_index)
+
+	_refresh_row_selection_styles()
+
+
+## Builds the amber star-rating badge shared by song rows (previously) and
+## difficulty sub-rows (now, since a song row no longer shows a star -- with
+## several difficulties fanned out beneath it, a single star on the parent
+## row would misrepresent which difficulty it belongs to).
+func _build_star_badge(star_rating: float) -> Control:
+	var star_badge := Label.new()
+	star_badge.text = "%.1f★" % star_rating
+	star_badge.add_theme_font_override("font", _mono_font())
+	star_badge.add_theme_font_size_override("font_size", 11)
+	star_badge.add_theme_color_override("font_color", _ink_color())
+	var badge_bg := PanelContainer.new()
+	var badge_style := StyleBoxFlat.new()
+	badge_style.bg_color = _amber_color()
+	badge_style.corner_radius_top_left = 5
+	badge_style.corner_radius_top_right = 5
+	badge_style.corner_radius_bottom_right = 5
+	badge_style.corner_radius_bottom_left = 5
+	badge_style.content_margin_left = 8.0
+	badge_style.content_margin_right = 8.0
+	badge_style.content_margin_top = 4.0
+	badge_style.content_margin_bottom = 4.0
+	badge_bg.add_theme_stylebox_override("panel", badge_style)
+	badge_bg.add_child(star_badge)
+	badge_bg.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return badge_bg
 
 
 func _build_song_row(song: Dictionary, song_index: int) -> PanelContainer:
@@ -466,26 +535,9 @@ func _build_song_row(song: Dictionary, song_index: int) -> PanelContainer:
 	meta_label.add_theme_color_override("default_color", _text_secondary_color())
 	text_col.add_child(meta_label)
 
-	var star_badge := Label.new()
-	star_badge.text = "%.1f★" % float(best_diff.chart.metadata.star_rating)
-	star_badge.add_theme_font_override("font", _mono_font())
-	star_badge.add_theme_font_size_override("font_size", 11)
-	star_badge.add_theme_color_override("font_color", _ink_color())
-	var badge_bg := PanelContainer.new()
-	var badge_style := StyleBoxFlat.new()
-	badge_style.bg_color = _amber_color()
-	badge_style.corner_radius_top_left = 5
-	badge_style.corner_radius_top_right = 5
-	badge_style.corner_radius_bottom_right = 5
-	badge_style.corner_radius_bottom_left = 5
-	badge_style.content_margin_left = 8.0
-	badge_style.content_margin_right = 8.0
-	badge_style.content_margin_top = 4.0
-	badge_style.content_margin_bottom = 4.0
-	badge_bg.add_theme_stylebox_override("panel", badge_style)
-	badge_bg.add_child(star_badge)
-	badge_bg.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	hbox.add_child(badge_bg)
+	# No star badge here (user-directed deviation from the mockup): this row
+	# represents several difficulties now, so a single star would misstate
+	# which one it's for. Stars live on the fanned-out difficulty sub-rows.
 
 	var duration_label := Label.new()
 	duration_label.text = _format_duration(_chart_duration_ms(best_diff.chart))
@@ -512,39 +564,86 @@ func _build_song_row(song: Dictionary, song_index: int) -> PanelContainer:
 	return panel
 
 
+## Builds one difficulty sub-row for the expanded (selected) song, indented
+## under its parent row. Label reads "Title — Difficulty"
+## (ChartMetadata.format_display_name) -- the naming convention that also
+## drives the saved-score display in ui/profile.gd, so a subsong reads the
+## same way everywhere it appears.
+func _build_difficulty_subrow(song: Dictionary, diff_index: int) -> PanelContainer:
+	var diffs: Array = song.difficulties
+	var diff_chart: Chart = diffs[diff_index].chart
+	var is_selected := diff_index == _selected_difficulty_index
+
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _row_style_selected if is_selected else _row_style_normal)
+	_list_container.add_child(panel)
+
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 18)
+	panel.add_child(hbox)
+
+	var indent := Control.new()
+	indent.custom_minimum_size = Vector2(SUBROW_INDENT, 0)
+	hbox.add_child(indent)
+
+	var label := Label.new()
+	label.text = ChartMetadata.format_display_name(String(song.title), String(diff_chart.metadata.difficulty_name))
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_override("font", _display_font())
+	label.add_theme_font_size_override("font_size", 15)
+	label.add_theme_color_override("font_color", _text_primary_color() if is_selected else _text_secondary_color())
+	hbox.add_child(label)
+
+	hbox.add_child(_build_star_badge(diff_chart.metadata.star_rating))
+
+	var button := Button.new()
+	button.flat = true
+	button.focus_mode = Control.FOCUS_NONE
+	button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.pressed.connect(_on_subrow_pressed.bind(diff_index))
+	panel.add_child(button)
+
+	_subrow_labels.append(label)
+	return panel
+
+
 func _on_row_pressed(song_index: int) -> void:
-	_select_song(song_index)
+	if song_index == _selected_song_index:
+		return
+	_set_selected_song(song_index)
+	_render_rows(_filtered_sorted_songs())
+	_update_detail_panel()
 
 
-func _select_song(song_index: int) -> void:
-	_selected_song_index = song_index
-	if song_index >= 0 and song_index < _songs.size():
-		var diffs: Array = _songs[song_index].difficulties
-		_selected_difficulty_index = diffs.size() - 1 # default to the highest-star difficulty
-	else:
-		_selected_difficulty_index = -1
+func _on_subrow_pressed(diff_index: int) -> void:
+	if diff_index == _selected_difficulty_index:
+		return
+	_selected_difficulty_index = diff_index
 	_refresh_row_selection_styles()
 	_update_detail_panel()
 
 
 func _refresh_row_selection_styles() -> void:
 	var visible_songs := _filtered_sorted_songs()
-	for i in _row_panels.size():
+	for i in _song_row_panels.size():
 		if i >= visible_songs.size():
 			continue
 		var is_selected := _songs.find(visible_songs[i]) == _selected_song_index
-		_row_panels[i].add_theme_stylebox_override("panel", _row_style_selected if is_selected else _row_style_normal)
+		_song_row_panels[i].add_theme_stylebox_override("panel", _row_style_selected if is_selected else _row_style_normal)
 		# Mockup highlights the selected row's duration in pink; every
 		# other row stays secondary grey.
 		_row_duration_labels[i].add_theme_color_override(
 			"font_color", _pink_color() if is_selected else _text_secondary_color())
 
+	for i in _subrow_panels.size():
+		var is_selected := _subrow_diff_indices[i] == _selected_difficulty_index
+		_subrow_panels[i].add_theme_stylebox_override("panel", _row_style_selected if is_selected else _row_style_normal)
+		_subrow_labels[i].add_theme_color_override(
+			"font_color", _text_primary_color() if is_selected else _text_secondary_color())
+
 
 func _update_detail_panel() -> void:
-	for chip in _chip_buttons:
-		chip.queue_free()
-	_chip_buttons.clear()
-
 	if _selected_song_index < 0:
 		_stop_preview()
 		_title_label.text = "No charts found"
@@ -558,6 +657,7 @@ func _update_detail_panel() -> void:
 	var diffs: Array = song.difficulties
 	var selected_diff: Dictionary = diffs[_selected_difficulty_index]
 	var chart: Chart = selected_diff.chart
+	PlaySession.song_select_selected_path = String(selected_diff.path)
 	_start_preview(selected_diff)
 
 	_title_label.text = String(song.title)
@@ -576,22 +676,6 @@ func _update_detail_panel() -> void:
 	_time_label.text = "0:00 / %s" % duration_str
 	_progress_fill.anchor_right = 0.0
 
-	for i in diffs.size():
-		var diff_chart: Chart = diffs[i].chart
-		var chip := Button.new()
-		chip.text = "%s %.1f" % [diff_chart.metadata.difficulty_name, diff_chart.metadata.star_rating]
-		chip.flat = true
-		chip.focus_mode = Control.FOCUS_NONE
-		chip.add_theme_font_override("font", _mono_font())
-		chip.add_theme_font_size_override("font_size", 13)
-		var selected := (i == _selected_difficulty_index)
-		chip.add_theme_stylebox_override("normal", _chip_style_selected if selected else _chip_style_normal)
-		chip.add_theme_stylebox_override("hover", _chip_style_selected if selected else _chip_style_normal)
-		chip.add_theme_color_override("font_color", _text_primary_color() if selected else _text_secondary_color())
-		chip.pressed.connect(_on_chip_pressed.bind(i))
-		_difficulty_chips_row.add_child(chip)
-		_chip_buttons.append(chip)
-
 	# Mockup's overline includes the selected difficulty ("YOUR BEST — HARD").
 	_your_best_overline.text = "YOUR BEST — %s" % String(chart.metadata.difficulty_name).to_upper()
 
@@ -609,11 +693,6 @@ func _update_detail_panel() -> void:
 	_play_button.disabled = false
 
 
-func _on_chip_pressed(diff_index: int) -> void:
-	_selected_difficulty_index = diff_index
-	_update_detail_panel()
-
-
 func _on_play_pressed() -> void:
 	if _selected_song_index < 0 or _selected_difficulty_index < 0:
 		return
@@ -627,7 +706,12 @@ func _on_play_pressed() -> void:
 
 	PlaySession.chart_list = paths
 	PlaySession.chart_index = play_index
-	PlaySession.mods = GameplayMods.new(_no_fail_check.button_pressed, false)
+	# PlaySession.mods is left as-is here -- it's set by the Modifiers screen
+	# (ui/modifiers.gd), which writes straight through to PlaySession.mods
+	# live as the player toggles things, same session-only handoff as every
+	# other pre-gameplay setting. A first-ever play with no visit to the
+	# Modifiers screen still gets the PlaySession default (GameplayMods.new(),
+	# fully vanilla).
 	# A normal play from Song Select is never a playtest -- clear any stale
 	# origin flag left over from an earlier editor playtest so Results'
 	# Back button doesn't mistakenly route this run back to the editor.
@@ -636,9 +720,9 @@ func _on_play_pressed() -> void:
 	SceneRouter.goto_scene_pushed(GAMEPLAY_SCENE)
 
 
-func _on_calibrate_pressed() -> void:
+func _on_modifiers_pressed() -> void:
 	_stop_preview()
-	SceneRouter.goto_scene_pushed(CALIBRATION_SCENE)
+	SceneRouter.goto_scene_pushed(MODIFIERS_SCENE)
 
 
 func _on_back_pressed() -> void:

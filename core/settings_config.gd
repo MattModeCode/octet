@@ -29,3 +29,15 @@ extends Resource
 ## resources (pre-Stage 1) backward compatible without a migration step.
 ## Populated/updated by LaneInput.rebind() (core/lane_input.gd).
 @export var lane_keys: Array[String] = []
+
+## -- Display. Applied by SettingsStore.apply_fullscreen() on boot and by
+## SettingsStore.set_fullscreen() when changed from the settings screen.
+@export var fullscreen: bool = true
+
+## -- Volume (linear 0.0-1.0, not dB -- dB conversion happens in
+## SettingsStore.set_bus_volume so this resource stays UI-friendly).
+## Applied to the Master/Music/SFX buses (audio/default_bus_layout.tres) by
+## SettingsStore.apply_volumes() on boot.
+@export var master_volume: float = 0.8
+@export var music_volume: float = 0.8
+@export var sfx_volume: float = 0.8

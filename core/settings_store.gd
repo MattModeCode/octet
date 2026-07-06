@@ -27,8 +27,63 @@ func _ready() -> void:
 		settings = template.duplicate() if template != null else SettingsConfig.new()
 		save()
 
+	apply_fullscreen()
+	apply_volumes()
+
 
 ## Persists the current `settings` to user://settings.tres.
 ## Returns OK on success, or a Godot Error code on failure.
 func save() -> Error:
 	return ResourceSaver.save(settings, USER_SETTINGS_PATH)
+
+
+## Applies settings.fullscreen to the live window. Called on boot (so the
+## saved preference takes effect immediately) and by set_fullscreen().
+func apply_fullscreen() -> void:
+	var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
+	DisplayServer.window_set_mode(mode)
+
+
+## Updates the fullscreen preference, applies it to the live window, and
+## persists it. Used by the settings screen's Fullscreen toggle.
+func set_fullscreen(on: bool) -> void:
+	settings.fullscreen = on
+	apply_fullscreen()
+	save()
+
+
+## Applies settings.{master,music,sfx}_volume to the corresponding audio
+## buses (audio/default_bus_layout.tres). Called on boot.
+func apply_volumes() -> void:
+	_apply_bus_volume("Master", settings.master_volume)
+	_apply_bus_volume("Music", settings.music_volume)
+	_apply_bus_volume("SFX", settings.sfx_volume)
+
+
+## Updates one bus's linear volume (0.0-1.0), applies it live, and persists
+## it. Used by the settings screen's volume sliders.
+func set_bus_volume(bus_name: String, linear: float) -> void:
+	linear = clampf(linear, 0.0, 1.0)
+	match bus_name:
+		"Master": settings.master_volume = linear
+		"Music": settings.music_volume = linear
+		"SFX": settings.sfx_volume = linear
+		_:
+			push_error("SettingsStore.set_bus_volume: unknown bus '%s'" % bus_name)
+			return
+	_apply_bus_volume(bus_name, linear)
+	save()
+
+
+## Converts a linear 0.0-1.0 volume to dB and applies it to [param bus_name],
+## muting the bus outright at 0 rather than sending -inf dB through
+## linear_to_db (which AudioServer already clamps, but muting is the
+## explicit, readable way to represent "silent").
+func _apply_bus_volume(bus_name: String, linear: float) -> void:
+	var bus_index := AudioServer.get_bus_index(bus_name)
+	if bus_index == -1:
+		push_error("SettingsStore._apply_bus_volume: bus '%s' not found -- check audio/default_bus_layout.tres" % bus_name)
+		return
+	AudioServer.set_bus_mute(bus_index, linear <= 0.0)
+	if linear > 0.0:
+		AudioServer.set_bus_volume_db(bus_index, linear_to_db(linear))

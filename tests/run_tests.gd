@@ -67,6 +67,11 @@ func _register_all_tests() -> void:
 	for entry in lane_input_suite.get_tests():
 		_tests.append(TestCase.new(entry.name, entry.callable))
 
+	var settings_store_suite := TestSettingsStore.new()
+	_suites.append(settings_store_suite)
+	for entry in settings_store_suite.get_tests():
+		_tests.append(TestCase.new(entry.name, entry.callable))
+
 	var gameplay_suite := TestGameplay.new()
 	_suites.append(gameplay_suite)
 	for entry in gameplay_suite.get_tests():

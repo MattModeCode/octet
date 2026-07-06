@@ -23,6 +23,10 @@ extends Resource
 @export var health_delta_good: float = -1.0
 @export var health_delta_miss: float = -6.0
 @export var health_start: float = 100.0
+## Seconds to hold the "FAILED" state (frozen gameplay) before auto-routing
+## to the results screen. Only reached when no_fail is off -- see
+## game/gameplay.gd's _on_song_failed().
+@export var fail_exit_delay_sec: float = 1.0
 
 ## -- Combo (§2.5). Multiplier = 1 + floor(combo / combo_multiplier_step),
 ## capped at combo_multiplier_cap (e.g. x4). Scales score only, never

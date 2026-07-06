@@ -26,6 +26,7 @@ const HISTOGRAM_MAX_HEIGHT: float = 140.0
 const BREAKDOWN_BAR_HEIGHT := 12.0
 
 @onready var _overline_label: RichTextLabel = %OverlineLabel
+@onready var _grade_glow: TextureRect = %GradeGlow
 @onready var _grade_label: Label = %GradeLabel
 @onready var _new_best_label: Label = %NewBestLabel
 @onready var _score_value: Label = %ScoreValue
@@ -43,6 +44,7 @@ var _engine: JudgeEngine
 
 
 func _ready() -> void:
+	_grade_glow.texture = _build_grade_glow_texture()
 	_engine = PlaySession.last_engine
 	_back_button.pressed.connect(_on_back_pressed)
 
@@ -60,20 +62,29 @@ func _ready() -> void:
 
 func _populate() -> void:
 	_overline_label.text = _song_overline()
-	_grade_label.text = _engine.grade()
+	if _engine.is_failed():
+		_grade_label.text = "FAIL"
+		# "FAIL" is 4 glyphs vs. a grade's 1-2 -- the grade slot's 220px size
+		# would overflow GradeStack's width, so shrink to fit the same box.
+		_grade_label.add_theme_font_size_override("font_size", 120)
+	else:
+		_grade_label.text = _engine.grade()
+		_grade_label.add_theme_font_size_override("font_size", 220)
+	_animate_grade_in()
 	_accuracy_value.text = "%.2f%%" % (_engine.accuracy() * 100.0)
 	_combo_value.text = "%dx" % _engine.max_combo
 	_score_value.text = "%d" % _engine.score
 
 	_build_breakdown()
 
+	# FAILED is no longer a badge here -- the grade slot itself now shows
+	# "FAIL" directly (see above), so a second small "FAILED" badge would
+	# just repeat it.
 	var badges: Array[String] = []
 	if _engine.is_full_combo():
 		badges.append("FULL COMBO")
 	if _engine.is_all_perfect():
 		badges.append("ALL PERFECT")
-	if _engine.is_failed():
-		badges.append("FAILED")
 	if not _engine.is_ranked():
 		badges.append("UNRANKED")
 	_badges_label.text = "  ·  ".join(badges)
@@ -82,6 +93,62 @@ func _populate() -> void:
 	_offset_label.text = "[color=#A79FAE]avg offset [/color][color=#FF2D6E]%.1fms[/color]" % _mean_offset()
 
 	_build_histogram()
+
+
+## Amber radial gradient behind the grade glyph -- Godot Labels can't blur
+## text, so the mockup's `text-shadow:0 0 60px rgba(255,201,60,.5)` bloom is
+## reproduced with a GradientTexture2D, the same technique
+## ui/radial_background.gd uses for the page glow. Flagged design deviation
+## per CLAUDE.md's fidelity rule: closest achievable equivalent, not a cut.
+func _build_grade_glow_texture() -> GradientTexture2D:
+	var amber := DesignTokens.COLOR_AMBER
+	var transparent_amber := Color(amber.r, amber.g, amber.b, 0.0)
+	var gradient := Gradient.new()
+	gradient.offsets = PackedFloat32Array([0.0, 1.0])
+	gradient.colors = PackedColorArray([amber, transparent_amber])
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.width = 256
+	texture.height = 256
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.fill_from = Vector2(0.5, 0.5)
+	texture.fill_to = Vector2(1.0, 0.5)
+	return texture
+
+
+## Mockup's octetGradeIn keyframe: opacity 0->1, scale .85->1, .5s ease-out.
+## Skipped under reduced motion (grade lands at its final state immediately)
+## -- same convention as gameplay.gd's _pulse_combo_label.
+func _animate_grade_in() -> void:
+	_grade_label.modulate.a = 1.0
+	_grade_label.scale = Vector2.ONE
+	if _reduced_motion():
+		return
+	_grade_label.scale = Vector2(0.85, 0.85)
+	_grade_label.modulate.a = 0.0
+	# GradeLabel's size isn't resolved until after this frame's layout pass,
+	# same reason _size_breakdown_fill defers -- pivot needs the real size.
+	call_deferred("_start_grade_tween")
+
+
+func _start_grade_tween() -> void:
+	if not is_instance_valid(_grade_label):
+		return
+	_grade_label.pivot_offset = _grade_label.size * 0.5
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_parallel(true)
+	tween.tween_property(_grade_label, "scale", Vector2.ONE, 0.5)
+	tween.tween_property(_grade_label, "modulate:a", 1.0, 0.5)
+
+
+func _reduced_motion() -> bool:
+	if get_tree() == null or not get_tree().root.has_node("SettingsStore"):
+		return false
+	if "settings" not in SettingsStore or SettingsStore.settings == null:
+		return false
+	return "reduced_motion" in SettingsStore.settings and SettingsStore.settings.reduced_motion
 
 
 func _song_overline() -> String:

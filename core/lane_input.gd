@@ -33,10 +33,29 @@ func binding_for(lane: int) -> String:
 	return KeybindDefaults.lane_action_name(lane)
 
 
+## Returns the lane index currently bound to [param key_string] (matched via
+## current_key_string(), so it honours saved overrides + defaults alike), or
+## -1 if no lane uses that key. [param except_lane] is skipped from the
+## search -- pass the lane being rebound so it doesn't conflict with itself.
+func lane_using_key(key_string: String, except_lane: int = -1) -> int:
+	for lane in KeybindDefaults.DEFAULT_LANE_KEYS.size():
+		if lane == except_lane:
+			continue
+		if current_key_string(lane) == key_string:
+			return lane
+	return -1
+
+
 ## Rebinds [param lane] to [param keycode] (a Key enum value): updates the
 ## InputMap action, persists the new binding to SettingsStore, and saves it.
-func rebind(lane: int, keycode: Key) -> void:
+## Returns false without applying anything if [param keycode] is already
+## bound to a different lane (PROJECT_BRIEF §2.1: no two lanes may share a
+## key) -- true if the rebind was applied.
+func rebind(lane: int, keycode: Key) -> bool:
 	var key_string := OS.get_keycode_string(keycode)
+	if lane_using_key(key_string, lane) != -1:
+		return false
+
 	_register_action(lane, key_string)
 
 	if _has_autoload("SettingsStore") and SettingsStore.settings != null:
@@ -46,6 +65,7 @@ func rebind(lane: int, keycode: Key) -> void:
 		keys[lane] = key_string
 		SettingsStore.settings.lane_keys = keys
 		SettingsStore.save()
+	return true
 
 
 ## (Re)creates the InputMap action for [param lane] bound to [param key_string]

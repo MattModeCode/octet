@@ -87,8 +87,13 @@ func _init(chart: Chart, gameplay: GameplayConfig, scoring: ScoringConfig, mods:
 ## Advances judgment for the given song time: auto-Misses any tap/hold-head
 ## whose Good window has fully elapsed unhit, fires due hold ticks for
 ## currently-held holds, and auto-resolves hold tails that were never
-## released past their window.
+## released past their window. When GameplayMods.autoplay is on, synthesizes
+## perfect presses/releases first so every note is judged before the
+## auto-miss pass below ever sees it.
 func update(song_time_ms: float) -> void:
+	if _mods.autoplay:
+		_autoplay_update(song_time_ms)
+
 	for runtime in _notes:
 		if not runtime.head_judged:
 			if song_time_ms > runtime.note.time_ms + _gameplay.window_good_ms:
@@ -99,6 +104,22 @@ func update(song_time_ms: float) -> void:
 			_fire_due_ticks(runtime, song_time_ms)
 			if song_time_ms > runtime.note.end_time_ms + _gameplay.window_good_ms:
 				_resolve_overheld_tail(runtime)
+
+
+## GameplayMods.autoplay support: presses every unjudged head exactly at its
+## note.time_ms (error 0 -> PERFECT via Judgment.bucket) and releases every
+## currently-held tail exactly at its end_time_ms, reusing the public
+## on_lane_press()/on_lane_release() so scoring/combo/health math is never
+## duplicated. Safe to mutate runtime fields while iterating _notes here --
+## only the array elements' fields change, not the array itself.
+func _autoplay_update(song_time_ms: float) -> void:
+	for runtime in _notes:
+		if not runtime.head_judged:
+			if song_time_ms >= runtime.note.time_ms:
+				on_lane_press(runtime.note.lane, runtime.note.time_ms)
+		elif runtime.is_hold and runtime.held and not runtime.tail_judged:
+			if song_time_ms >= runtime.note.end_time_ms:
+				on_lane_release(runtime.note.lane, runtime.note.end_time_ms)
 
 
 ## Judges the nearest unjudged tap/hold-head in [param lane] within the
@@ -253,6 +274,13 @@ func _apply_judgment(lane: int, kind: Judgment.Kind, signed_error_ms, affects_co
 	if affects_combo:
 		if kind == Judgment.Kind.MISS:
 			combo = 0
+			# Sudden Death: fail on the very first real discrete miss,
+			# independent of health. Guarded by "not _failed" here so the
+			# health check right below never double-emits song_failed for
+			# the same event.
+			if _mods.sudden_death and not _mods.no_fail and not _failed:
+				_failed = true
+				song_failed.emit()
 		else:
 			combo += 1
 			max_combo = maxi(max_combo, combo)

@@ -1,14 +1,15 @@
 extends PanelContainer
-## Rebind panel foundation (Stage 1 / M0 scope per PROJECT_BRIEF §2.1 --
-## "key bindings are fully rebindable"). Builds one row per lane (colour
-## swatch + label + current-key button) from LaneInput/DesignTokens, and
-## lets the player click a key button then press a new key to rebind it.
+## Rebind panel (PROJECT_BRIEF §2.1 -- "key bindings are fully rebindable").
+## Builds one row per lane (colour swatch + label + current-key button) from
+## LaneInput/DesignTokens, and lets the player click a key button then press
+## a new key to rebind it. LaneInput.rebind() rejects a key already used by
+## another lane; StatusLabel surfaces that rejection.
 ##
-## This is the rebinding *foundation*, not the final settings screen --
-## later stages may fold this into a full settings/calibration surface
-## (Stage 3, §2.8) without changing LaneInput's public API.
+## Reached from the Settings screen's "Rebind lane keys" button
+## (ui/settings.gd) as well as directly, so it keeps working standalone.
 
 @onready var _rows_container: VBoxContainer = %RowsContainer
+@onready var _status_label: Label = %StatusLabel
 @onready var _back_button: Button = %BackButton
 
 var _capturing_lane: int = -1
@@ -48,18 +49,29 @@ func _build_rows() -> void:
 func _on_key_button_pressed(lane: int, button: Button) -> void:
 	_capturing_lane = lane
 	button.text = "Press a key..."
+	_status_label.text = ""
 
 
 ## Captures the next key press while a rebind is pending. Uses
 ## _unhandled_key_input (rather than the lane_N actions themselves) so
 ## rebinding works even for a key not currently bound to any lane.
+##
+## LaneInput.rebind() rejects a key already bound to a different lane (no two
+## lanes may share a key) -- on rejection, restore this button's previous
+## text and show which lane already owns the key instead of silently
+## discarding the keypress.
 func _unhandled_key_input(event: InputEvent) -> void:
 	if _capturing_lane == -1:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		var lane := _capturing_lane
 		_capturing_lane = -1
-		LaneInput.rebind(lane, event.keycode)
+		var key_string := OS.get_keycode_string(event.keycode)
+		var conflicting_lane := LaneInput.lane_using_key(key_string, lane)
+		if LaneInput.rebind(lane, event.keycode):
+			_status_label.text = ""
+		else:
+			_status_label.text = "\"%s\" is already used by Lane %d" % [key_string, conflicting_lane + 1]
 		_key_buttons[lane].text = LaneInput.current_key_string(lane)
 		get_viewport().set_input_as_handled()
 
@@ -77,5 +89,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_on_back_pressed()
 
 
+## Reached only via ui/settings.gd's "Rebind lane keys" button, which uses
+## SceneRouter.goto_scene_pushed() -- so go_back() correctly returns to
+## Settings instead of hard-jumping past it to the main menu.
 func _on_back_pressed() -> void:
-	SceneRouter.goto_scene("res://ui/main.tscn")
+	SceneRouter.go_back()

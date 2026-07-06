@@ -13,6 +13,13 @@ extends Control
 ## has no honest data to show -- ScoreStore only keeps one best per chart,
 ## not a play history with timestamps -- so it stays an empty state instead
 ## of inventing the mockup's "2 hours ago" sample entries.
+##
+## User-directed deviation: the mockup's "Best scores" list shows no
+## difficulty at all (only "Recent plays" does, e.g. "Hard · 2 hours ago").
+## Each row here additionally shows "Title — Difficulty" plus the star
+## rating, since a saved score should surface which difficulty it was set
+## on -- both now persisted directly on the score record (core/score_store.gd,
+## core/best_scores.gd).
 
 const MAX_BEST_SCORES: int = 8
 
@@ -29,21 +36,25 @@ func _ready() -> void:
 
 
 ## Reads real local bests from ScoreStore (WP-E) -- one row per chart,
-## sorted highest score first. Chart title/difficulty come from re-reading
-## each .oct's metadata since ScoreStore only stores the numeric result,
-## not display strings; a missing/moved chart file is skipped rather than
-## shown with blank text.
+## sorted highest score first. Difficulty (name + star rating) now comes
+## from the score record itself (persisted at save time, fan-out difficulty
+## picker) rather than re-reading the .oct, so a row still shows its
+## difficulty even if the chart file has since moved or been deleted; the
+## .oct is still consulted for the title, falling back to the chart's
+## filename when it's missing.
 func _populate_best_scores() -> void:
 	var entries: Dictionary = ScoreStore.all_entries()
 	var rows: Array[Dictionary] = []
 	for chart_path in entries:
 		var best: Dictionary = entries[chart_path]
 		var chart: Chart = OctIO.load_oct(chart_path)
-		if chart == null:
-			continue
+		var title := String(chart_path).get_file()
+		if chart != null and not chart.metadata.title.is_empty():
+			title = chart.metadata.title
 		rows.append({
-			"title": chart.metadata.title if not chart.metadata.title.is_empty() else chart_path.get_file(),
-			"difficulty_name": chart.metadata.difficulty_name,
+			"title": title,
+			"difficulty_name": String(best.get("difficulty_name", "")),
+			"star_rating": float(best.get("star_rating", 0.0)),
 			"score": int(best.get("score", 0)),
 			"grade": String(best.get("grade", "—")),
 		})
@@ -71,13 +82,17 @@ func _build_best_score_row(row: Dictionary) -> Control:
 	info_vbox.add_theme_constant_override("separation", 2)
 
 	var title_label := Label.new()
-	title_label.text = row.title
+	# "Title — Difficulty" (ChartMetadata.format_display_name) -- same naming
+	# convention as the song-select fan-out sub-rows, so a saved score reads
+	# identically to its picker entry. Falls back to a bare title when an
+	# older record (saved before this change) has no difficulty_name.
+	title_label.text = ChartMetadata.format_display_name(String(row.title), String(row.difficulty_name))
 	title_label.add_theme_color_override("font_color", DesignTokens.COLOR_TEXT_PRIMARY)
 	info_vbox.add_child(title_label)
 
 	if not String(row.difficulty_name).is_empty():
 		var diff_label := Label.new()
-		diff_label.text = row.difficulty_name
+		diff_label.text = "%.1f★" % float(row.star_rating)
 		diff_label.add_theme_color_override("font_color", DesignTokens.COLOR_TEXT_MUTED)
 		diff_label.add_theme_font_size_override("font_size", 12)
 		info_vbox.add_child(diff_label)

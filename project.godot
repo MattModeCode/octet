@@ -33,12 +33,18 @@ Conductor="*res://audio/conductor.gd"
 SceneRouter="*res://ui/scene_router.gd"
 Net="*res://net/net_client.gd"
 
+[audio]
+
+buses/default_bus_layout="res://audio/default_bus_layout.tres"
+
 [display]
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/size/window_width_override=1280
 window/size/window_height_override=720
+window/size/mode=3
+window/size/resizable=false
 window/stretch/mode="canvas_items"
 
 [rendering]

@@ -44,6 +44,15 @@ var pending_audio_stream: AudioStream = null
 ## consumes it.
 var playtest_origin_scene: String = ""
 
+## Path of the .oct difficulty currently selected on Song Select, kept here
+## (not just local state) so it survives a round trip through the Modifiers
+## screen -- change_scene_to_file() (SceneRouter) always tears down and
+## rebuilds song_select.gd from scratch, which would otherwise re-scan and
+## re-default to the first song every time the player backs out of
+## Modifiers. Written by song_select.gd on every selection change, read back
+## on _ready() to restore it.
+var song_select_selected_path: String = ""
+
 
 ## Returns and clears pending_chart.
 func take_pending_chart() -> Chart:

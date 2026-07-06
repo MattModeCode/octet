@@ -31,6 +31,7 @@ var _last_song_time_ms: float = 0.0
 func _ready() -> void:
 	_player = AudioStreamPlayer.new()
 	_player.name = "ConductorPlayer"
+	_player.bus = "Music"
 	add_child(_player)
 
 
@@ -104,13 +105,13 @@ func is_playing() -> bool:
 	return _is_playing
 
 
-## Sets variable-rate playback (editor scrub/preview, §3.6: 0.25x-1x) via
+## Sets variable-rate playback (editor scrub/preview, §3.6: 0.25x-1x; also
+## the gameplay Double/Half speed modifiers, GameplayMods.rate) via
 ## AudioStreamPlayer.pitch_scale -- changes both speed and pitch together,
 ## which is an honest, simple implementation choice (no time-stretch DSP);
 ## song_time_ms() still reports the correct song position regardless of
 ## rate, since get_playback_position() tracks actual stream consumption,
-## not real-world elapsed time. Gameplay never calls this -- it always
-## plays at rate 1.0.
+## not real-world elapsed time.
 func set_playback_rate(rate: float) -> void:
 	_player.pitch_scale = rate
 

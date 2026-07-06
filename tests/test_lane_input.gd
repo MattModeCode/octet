@@ -16,6 +16,7 @@ func get_tests() -> Array[Dictionary]:
 	return [
 		{"name": "lane_input_actions_registered", "callable": test_lane_actions_registered},
 		{"name": "lane_input_rebind_swaps_key", "callable": test_rebind_swaps_key},
+		{"name": "lane_input_rebind_rejects_duplicate_key", "callable": test_rebind_rejects_duplicate_key},
 	]
 
 
@@ -57,4 +58,40 @@ func test_rebind_swaps_key() -> bool:
 
 	if ok:
 		print("[PASS] lane_input_rebind_swaps_key")
+	return ok
+
+
+## Two lanes must never share a key (PROJECT_BRIEF §2.1). Uses lanes 6/7
+## (unrelated to test_rebind_swaps_key's lane 0) so ordering between tests
+## doesn't matter, and restores both to their defaults afterward.
+func test_rebind_rejects_duplicate_key() -> bool:
+	var lane_input = TestRunner.get_autoload("LaneInput")
+	var ok := TestRunner._assert(lane_input != null,
+		"lane_input_rebind_rejects_duplicate_key: LaneInput autoload not found")
+	if lane_input == null:
+		return false
+
+	# Give lane 6 a known, distinctive key, then try to steal it for lane 7.
+	ok = TestRunner._assert(lane_input.rebind(6, KEY_9),
+		"lane_input_rebind_rejects_duplicate_key: fixture rebind(6, KEY_9) unexpectedly rejected") and ok
+
+	var accepted: bool = lane_input.rebind(7, KEY_9)
+	ok = TestRunner._assert(not accepted,
+		"lane_input_rebind_rejects_duplicate_key: rebind(7, KEY_9) should have been rejected (lane 6 already uses it)") and ok
+
+	ok = TestRunner._assert(lane_input.current_key_string(7) == "Semicolon",
+		"lane_input_rebind_rejects_duplicate_key: lane_7 should be unchanged (still 'Semicolon') after a rejected rebind, got '%s'" % lane_input.current_key_string(7)) and ok
+
+	ok = TestRunner._assert(lane_input.lane_using_key("9") == 6,
+		"lane_input_rebind_rejects_duplicate_key: lane_using_key('9') should return lane 6") and ok
+	ok = TestRunner._assert(lane_input.lane_using_key("9", 6) == -1,
+		"lane_input_rebind_rejects_duplicate_key: lane_using_key('9', except_lane=6) should return -1") and ok
+	ok = TestRunner._assert(lane_input.lane_using_key("ZZZ_NOT_A_KEY") == -1,
+		"lane_input_rebind_rejects_duplicate_key: lane_using_key on an unused key string should return -1") and ok
+
+	# Restore lane 6 so this test doesn't leave global state mutated.
+	lane_input.rebind(6, KEY_L)
+
+	if ok:
+		print("[PASS] lane_input_rebind_rejects_duplicate_key")
 	return ok

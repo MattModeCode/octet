@@ -1,10 +1,11 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://game/results.gd" id="1_resultsgd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
 [ext_resource type="PackedScene" path="res://ui/radial_background.tscn" id="3_radialbg"]
 [ext_resource type="FontVariation" path="res://assets/fonts/font_display.tres" id="4_fontdisplay"]
 [ext_resource type="FontVariation" path="res://assets/fonts/font_mono.tres" id="5_fontmono"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_ui_semibold.tres" id="6_fontuisemibold"]
 
 ; -----------------------------------------------------------------------
 ; Results, imported from "Octet - Results.dc.html" (docs/DESIGN_HANDOFF.md).
@@ -25,8 +26,13 @@
 ; Per-judgment breakdown bars and the hit-timing histogram are built by
 ; results.gd since they're data-driven (Judgment counts / hit_errors); the
 ; grade/stats/card skeleton below is static per the mockup. NewBestLabel
-; (under GradeLabel) is populated by results.gd from PlaySession.
+; (under GradeBlock) is populated by results.gd from PlaySession.
 ; last_run_is_new_best (WP-E) -- empty text when this run wasn't a best.
+;
+; GradeStack wraps GradeLabel with a GradeGlow (TextureRect, radial gradient
+; built in results.gd) behind it -- reproduces the mockup's soft
+; text-shadow bloom, which Godot Labels can't do natively. The grade's
+; scale-in entrance (octetGradeIn) is also driven from results.gd.
 ; -----------------------------------------------------------------------
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_histogram_card"]
@@ -125,7 +131,8 @@ custom_minimum_size = Vector2(0, 20)
 bbcode_enabled = true
 fit_content = true
 scroll_active = false
-theme_override_fonts/normal_font = ExtResource("5_fontmono")
+autowrap_mode = 0
+theme_override_fonts/normal_font = ExtResource("6_fontuisemibold")
 theme_override_font_sizes/normal_font_size = 14
 theme_override_colors/default_color = Color(0.654902, 0.623529, 0.682353, 1)
 text = "[center]—[/center]"
@@ -143,9 +150,33 @@ theme_override_constants/separation = 80
 layout_mode = 2
 theme_override_constants/separation = -8
 
-[node name="GradeLabel" type="Label" parent="RootVBox/GradeStatsRow/GradeBlock"]
-unique_name_in_owner = true
+[node name="GradeStack" type="Control" parent="RootVBox/GradeStatsRow/GradeBlock"]
 layout_mode = 2
+size_flags_horizontal = 4
+custom_minimum_size = Vector2(320, 260)
+
+[node name="GradeGlow" type="TextureRect" parent="RootVBox/GradeStatsRow/GradeBlock/GradeStack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -70.0
+offset_top = -70.0
+offset_right = 70.0
+offset_bottom = 70.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="GradeLabel" type="Label" parent="RootVBox/GradeStatsRow/GradeBlock/GradeStack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_fonts/font = ExtResource("4_fontdisplay")
 theme_override_font_sizes/font_size = 220
 theme_override_colors/font_color = Color(1, 0.788235, 0.235294, 1)
@@ -153,6 +184,7 @@ theme_override_colors/font_outline_color = Color(1, 0.788235, 0.235294, 0.35)
 theme_override_constants/outline_size = 16
 text = "—"
 horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="NewBestLabel" type="Label" parent="RootVBox/GradeStatsRow/GradeBlock"]
 unique_name_in_owner = true
@@ -274,6 +306,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 18)
 bbcode_enabled = true
 fit_content = true
+autowrap_mode = 0
 scroll_active = false
 theme_override_fonts/normal_font = ExtResource("5_fontmono")
 theme_override_font_sizes/normal_font_size = 12
@@ -333,7 +366,7 @@ text = "LATE"
 horizontal_alignment = 2
 
 [node name="BottomSpacer" type="Control" parent="RootVBox"]
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 size_flags_vertical = 3
 
@@ -371,3 +404,7 @@ theme_override_fonts/font = ExtResource("4_fontdisplay")
 theme_override_font_sizes/font_size = 17
 theme_override_colors/font_color = Color(0.047, 0.039, 0.059, 1)
 text = "Next song"
+
+[node name="ActionsBottomSpacer" type="Control" parent="RootVBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2

@@ -24,6 +24,7 @@ const LANE_COUNT: int = 8
 const LANE_GAP: float = 24.0
 const JUDGMENT_Y: float = 764.0
 const KEY_LABEL_Y: float = 788.0
+const KEY_LABEL_FONT_SIZE: int = 16
 const NOTE_RADIUS: float = 28.0
 const HOLD_TAIL_WIDTH: float = 22.0
 
@@ -161,7 +162,7 @@ func _draw_judgment_line() -> void:
 func _draw_key_labels() -> void:
 	for lane in LANE_COUNT:
 		var colour := DesignTokens.lane_color(lane)
-		draw_string(FONT_MONO, Vector2(_lane_x(lane), KEY_LABEL_Y), KEY_LABELS[lane], HORIZONTAL_ALIGNMENT_CENTER, _lane_width(), 13, colour)
+		draw_string(FONT_MONO, Vector2(_lane_x(lane), KEY_LABEL_Y), KEY_LABELS[lane], HORIZONTAL_ALIGNMENT_CENTER, _lane_width(), KEY_LABEL_FONT_SIZE, colour)
 
 
 func _draw_notes() -> void:

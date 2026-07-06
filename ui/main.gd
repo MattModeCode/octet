@@ -10,11 +10,9 @@ const PLAY_SCENE := "res://game/song_select.tscn"
 const EDITOR_SCENE := "res://editor/editor_main.tscn"
 const BROWSE_MAPS_SCENE := "res://ui/map_hub.tscn"
 const PROFILE_SCENE := "res://ui/profile.tscn"
-## Best available "Settings" destination today — the mockup's Settings link
-## has no dedicated settings screen yet (Stage 1's rebind panel is the
-## closest thing built so far). Routes here until a real settings screen
-## exists.
-const SETTINGS_SCENE := "res://ui/rebind_panel.tscn"
+## Settings destination — a real settings screen (display/volume/
+## accessibility, with a link through to lane rebinding).
+const SETTINGS_SCENE := "res://ui/settings.tscn"
 
 ## DesignTokens is an autoload singleton, but lane_color() is static -- call
 ## it on the script itself rather than the instance to avoid Godot's
@@ -154,6 +152,7 @@ func _start_ambient_music() -> void:
 	if _ambient_tracks.is_empty():
 		return
 	_ambient_player = AudioStreamPlayer.new()
+	_ambient_player.bus = "Music"
 	_ambient_player.volume_db = AMBIENT_VOLUME_DB
 	_ambient_player.finished.connect(_on_ambient_track_finished)
 	add_child(_ambient_player)

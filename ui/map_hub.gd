@@ -617,6 +617,7 @@ func _style_download_button() -> void:
 
 func _build_preview_player() -> void:
 	_preview_player = AudioStreamPlayer.new()
+	_preview_player.bus = "Music"
 	_preview_player.volume_db = PREVIEW_VOLUME_DB
 	_preview_player.finished.connect(_on_preview_finished)
 	add_child(_preview_player)
