@@ -17,7 +17,11 @@ extends Control
 ## directly from the mockup's own pixel values, relative to that rect.
 
 const LANE_COUNT: int = 8
-const LANE_WIDTH: float = 80.0
+## Visual gap splitting the 4 left lanes from the 4 right lanes. Lane
+## widths shrink slightly (see _lane_width, which replaces the old fixed
+## 80px LANE_WIDTH) so the 8 columns + gap still fill the playfield's
+## existing 640px rect exactly.
+const LANE_GAP: float = 24.0
 const JUDGMENT_Y: float = 764.0
 const KEY_LABEL_Y: float = 788.0
 const NOTE_RADIUS: float = 28.0
@@ -110,9 +114,24 @@ func _draw() -> void:
 	_draw_judgment_popup()
 
 
+## Effective lane width so 8 lanes + one LANE_GAP fill the playfield's
+## width exactly (replaces the fixed LANE_WIDTH for all X placement below).
+func _lane_width() -> float:
+	return (size.x - LANE_GAP) / LANE_COUNT
+
+
+## Left edge of [param lane]'s column -- the single choke point all draw
+## functions route through so the gap between lane 3 and lane 4 (the left
+## group / right group split) stays consistent everywhere.
+func _lane_x(lane: int) -> float:
+	return lane * _lane_width() + (LANE_GAP if lane >= 4 else 0.0)
+
+
 func _draw_lane_separators() -> void:
 	for i in range(1, LANE_COUNT):
-		var x := i * LANE_WIDTH
+		if i == 4:
+			continue # the gap itself replaces this separator
+		var x := _lane_x(i)
 		draw_line(Vector2(x, 0.0), Vector2(x, size.y), DesignTokens.COLOR_HAIRLINE, 1.0)
 
 
@@ -120,23 +139,29 @@ func _draw_lane_separators() -> void:
 ## octetPulseLine keyframe, .55<->1.0 opacity over 1.3s) -- same layered-
 ## line glow trick editor/waveform_view.gd uses for its playhead, since
 ## Control 2D drawing has no native glow filter. Static (no pulse) under
-## reduced motion.
+## reduced motion. Drawn as two segments (left group / right group) so the
+## line doesn't visually bridge the lane gap.
 func _draw_judgment_line() -> void:
 	var pulse := 1.0 if _reduced_motion else _pulse(0.55, 1.0, PULSE_PERIOD_MS)
+	var left_end := _lane_x(3) + _lane_width()
+	var right_start := _lane_x(4)
 	var glow := DesignTokens.COLOR_JUDGMENT_GLOW
 	for layer in range(3, 0, -1):
 		var layer_colour := glow
 		layer_colour.a = 0.10 * pulse
-		draw_line(Vector2(0.0, JUDGMENT_Y), Vector2(size.x, JUDGMENT_Y), layer_colour, 2.0 + layer * 5.0)
+		var width := 2.0 + layer * 5.0
+		draw_line(Vector2(0.0, JUDGMENT_Y), Vector2(left_end, JUDGMENT_Y), layer_colour, width)
+		draw_line(Vector2(right_start, JUDGMENT_Y), Vector2(size.x, JUDGMENT_Y), layer_colour, width)
 	var line_colour := DesignTokens.COLOR_JUDGMENT_LINE
 	line_colour.a = pulse
-	draw_line(Vector2(0.0, JUDGMENT_Y), Vector2(size.x, JUDGMENT_Y), line_colour, 3.0)
+	draw_line(Vector2(0.0, JUDGMENT_Y), Vector2(left_end, JUDGMENT_Y), line_colour, 3.0)
+	draw_line(Vector2(right_start, JUDGMENT_Y), Vector2(size.x, JUDGMENT_Y), line_colour, 3.0)
 
 
 func _draw_key_labels() -> void:
 	for lane in LANE_COUNT:
 		var colour := DesignTokens.lane_color(lane)
-		draw_string(FONT_MONO, Vector2(lane * LANE_WIDTH, KEY_LABEL_Y), KEY_LABELS[lane], HORIZONTAL_ALIGNMENT_CENTER, LANE_WIDTH, 13, colour)
+		draw_string(FONT_MONO, Vector2(_lane_x(lane), KEY_LABEL_Y), KEY_LABELS[lane], HORIZONTAL_ALIGNMENT_CENTER, _lane_width(), 13, colour)
 
 
 func _draw_notes() -> void:
@@ -145,7 +170,7 @@ func _draw_notes() -> void:
 			continue
 		var note: ChartNote = entry.note
 		var colour := DesignTokens.lane_color(note.lane)
-		var lane_centre_x := note.lane * LANE_WIDTH + LANE_WIDTH * 0.5
+		var lane_centre_x := _lane_x(note.lane) + _lane_width() * 0.5
 
 		if entry.is_hold:
 			var head_y := _note_y(float(note.time_ms))
@@ -184,7 +209,7 @@ func _draw_hit_burst() -> void:
 	if elapsed < 0.0 or elapsed > BURST_DURATION_MS:
 		return
 	var t := elapsed / BURST_DURATION_MS
-	var centre := Vector2(_burst_lane * LANE_WIDTH + LANE_WIDTH * 0.5, JUDGMENT_Y)
+	var centre := Vector2(_lane_x(_burst_lane) + _lane_width() * 0.5, JUDGMENT_Y)
 	var colour := DesignTokens.lane_color(_burst_lane)
 	colour.a = (1.0 - t) * 0.9
 	draw_circle(centre, lerpf(NOTE_RADIUS * 0.6, NOTE_RADIUS * 1.8, t), colour)

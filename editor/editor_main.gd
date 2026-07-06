@@ -21,10 +21,12 @@ const RATE_OPTIONS: Array[float] = [0.25, 0.5, 0.75, 1.0]
 const AUTOSAVE_INTERVAL_SEC: float = 15.0
 const BASE_WAVEFORM_WIDTH: float = 1800.0
 ## Note timeline is now vertical (time flows down, matching 2a) -- length
-## is its height (scaled by _time_zoom), breadth is its width (the 8 lane
-## columns' total width, scaled by _row_zoom).
+## is its height (scaled by _time_zoom); breadth (width) auto-fits the
+## ScrollContainer it lives in -- see _apply_zoom -- rather than being
+## driven by a separate horizontal zoom, which used to force the view
+## wider than its container and clip lanes with no way to scroll to them.
 const BASE_TIMELINE_LENGTH: float = 1800.0
-const BASE_TIMELINE_BREADTH: float = 800.0
+const ZOOM_KEY_STEP: float = 1.0
 
 @onready var _background: ColorRect = %Background
 @onready var _filename_label: Label = %FilenameLabel
@@ -48,7 +50,6 @@ const BASE_TIMELINE_BREADTH: float = 800.0
 @onready var _snap_row: HBoxContainer = %SnapRow
 @onready var _tool_rail: VBoxContainer = %ToolRail
 @onready var _time_zoom_slider: HSlider = %TimeZoomSlider
-@onready var _row_zoom_slider: HSlider = %RowZoomSlider
 @onready var _difficulty_tabs_row: HBoxContainer = %DifficultyTabsRow
 @onready var _add_difficulty_button: Button = %AddDifficultyButton
 @onready var _remove_difficulty_button: Button = %RemoveDifficultyButton
@@ -75,7 +76,6 @@ var _undo_stack := EditorUndoStack.new()
 var _selected_notes: Array[ChartNote] = []
 var _clipboard: Array[ChartNote] = []
 var _time_zoom: float = 1.0
-var _row_zoom: float = 1.0
 var _last_beat_flashed: int = -1
 var _snap_division: int = 4
 var _free_place: bool = false
@@ -179,7 +179,6 @@ func _wire_signals() -> void:
 	_add_timing_point_button.pressed.connect(_on_add_timing_point_pressed)
 
 	_time_zoom_slider.value_changed.connect(_on_time_zoom_changed)
-	_row_zoom_slider.value_changed.connect(_on_row_zoom_changed)
 
 	_add_difficulty_button.pressed.connect(_on_add_difficulty_pressed)
 	_remove_difficulty_button.pressed.connect(_on_remove_difficulty_pressed)
@@ -241,6 +240,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_RIGHT and not _selected_notes.is_empty():
 			_nudge_selection(_snap_step_ms())
 			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_DELETE or event.keycode == KEY_BACKSPACE:
+			_on_delete_pressed()
+			get_viewport().set_input_as_handled()
+		elif event.keycode == KEY_SPACE:
+			_on_play_pressed()
+			get_viewport().set_input_as_handled()
+		elif event.ctrl_pressed and (event.keycode == KEY_EQUAL or event.keycode == KEY_KP_ADD):
+			_step_zoom(ZOOM_KEY_STEP)
+			get_viewport().set_input_as_handled()
+		elif event.ctrl_pressed and (event.keycode == KEY_MINUS or event.keycode == KEY_KP_SUBTRACT):
+			_step_zoom(-ZOOM_KEY_STEP)
+			get_viewport().set_input_as_handled()
+
+
+func _step_zoom(delta: float) -> void:
+	_time_zoom_slider.value = clampf(_time_zoom_slider.value + delta, _time_zoom_slider.min_value, _time_zoom_slider.max_value)
 
 
 # ---------------------------------------------------------------------------
@@ -787,14 +802,12 @@ func _on_time_zoom_changed(value: float) -> void:
 	_apply_zoom()
 
 
-func _on_row_zoom_changed(value: float) -> void:
-	_row_zoom = value
-	_apply_zoom()
-
-
 func _apply_zoom() -> void:
 	_waveform_view.custom_minimum_size.x = BASE_WAVEFORM_WIDTH * _time_zoom
-	_note_timeline_view.custom_minimum_size = Vector2(BASE_TIMELINE_BREADTH * _row_zoom, BASE_TIMELINE_LENGTH * _time_zoom)
+	# Breadth (x) is left at 0 so the timeline auto-fits TimelineScroll's
+	# own width -- horizontal zoom was removed; note_timeline_view.gd
+	# already derives lane width from size.x (_column_width()).
+	_note_timeline_view.custom_minimum_size = Vector2(0.0, BASE_TIMELINE_LENGTH * _time_zoom)
 
 
 # ---------------------------------------------------------------------------

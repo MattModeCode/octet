@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://ui/map_hub.gd" id="1_maphubgd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
@@ -7,11 +7,18 @@
 [ext_resource type="FontVariation" path="res://assets/fonts/font_ui.tres" id="5_fontui"]
 
 ; -----------------------------------------------------------------------
-; Map Hub, header chrome imported from "Octet - Map Hub.dc.html" (browser
-; view -- docs/DESIGN_HANDOFF.md pattern, Claude Design MCP project
-; cc6f9e35-9183-4b42-8d8a-be6dfc135fe1). Colours baked as literal
-; DesignTokens values -- .tscn parses before autoloads exist, same
-; documented exception as game/song_select.tscn:
+; Map Hub -- real community browse/download screen consuming net/net_client.gd
+; (WP-M). Re-fetched and verified against "Octet - Map Hub.dc.html" live from
+; the Claude Design MCP (project cc6f9e35-9183-4b42-8d8a-be6dfc135fe1): header
+; chrome, 5-col grid, and the detail view's two-column layout (left info+
+; actions column with a border-right hairline, right a fixed 640px leaderboard
+; panel) all match the mockup's structure/spacing/colour directly.
+;
+; Colours baked as literal DesignTokens values for the header chrome below
+; (.tscn parses before autoloads exist, same documented exception as
+; game/song_select.tscn); everything below the header is styled at runtime
+; via map_hub.gd since it's data-driven (grid cards, difficulty chips, stat
+; blocks, detail cover):
 ;   COLOR_INK             #0C0A0F -> Color(0.047, 0.039, 0.059, 1)
 ;   COLOR_SURFACE         #16131B -> Color(0.086275, 0.07451, 0.105882, 1)
 ;   COLOR_HAIRLINE        #2A2431 -> Color(0.164706, 0.141176, 0.192157, 1)
@@ -19,13 +26,13 @@
 ;   COLOR_TEXT_SECONDARY  #A79FAE -> Color(0.654902, 0.623529, 0.682353, 1)
 ;   COLOR_TEXT_MUTED      #6E6676 -> Color(0.431373, 0.4, 0.462745, 1)
 ;
-; Known deviations from the mockup (CLAUDE.md design-fidelity rule -- see
-; map_hub.gd's header comment for why): the map grid and leaderboard are
-; replaced with an honest "coming soon" empty state rather than the
-; mockup's sample community data, since no map-sharing backend exists yet;
-; the search field and sort/filter chips are rendered but disabled for the
-; same reason; a Back button was added (not in the mockup, but necessary --
-; this screen is otherwise a dead end from the main menu).
+; Known, explicitly flagged deviations (see map_hub.gd for the full reasoning):
+; leaderboard is an honest "coming soon" label, never fabricated sample rows;
+; Preview is disabled until a map is actually downloaded, then plays the
+; local audio; the Filters chip is present but intentionally left unwired
+; (disabled + tooltip) rather than building a full filter panel this pass;
+; the stats row shows Rating + Downloads only -- the manifest has no distinct
+; "plays" field separate from download_count.
 ; -----------------------------------------------------------------------
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
@@ -53,7 +60,7 @@ content_margin_top = 11.0
 content_margin_right = 16.0
 content_margin_bottom = 11.0
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_chip"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sort_pill"]
 bg_color = Color(0.086275, 0.07451, 0.105882, 1)
 border_width_left = 1
 border_width_top = 1
@@ -64,10 +71,34 @@ corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
-content_margin_left = 16.0
-content_margin_top = 11.0
-content_margin_right = 16.0
-content_margin_bottom = 11.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_search_icon"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.431373, 0.4, 0.462745, 1)
+corner_radius_top_left = 7
+corner_radius_top_right = 7
+corner_radius_bottom_right = 7
+corner_radius_bottom_left = 7
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_left_column"]
+bg_color = Color(0, 0, 0, 0)
+border_width_right = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+content_margin_left = 8.0
+content_margin_top = 16.0
+content_margin_right = 32.0
+content_margin_bottom = 16.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_right_column"]
+bg_color = Color(0, 0, 0, 0)
+content_margin_left = 32.0
+content_margin_top = 16.0
+content_margin_right = 8.0
+content_margin_bottom = 16.0
 
 [node name="MapHub" type="Control"]
 layout_mode = 3
@@ -115,46 +146,45 @@ theme_override_font_sizes/font_size = 20
 text = "Browse maps"
 vertical_alignment = 1
 
-[node name="SearchField" type="PanelContainer" parent="MainVBox/HeaderBar/HeaderContent"]
+[node name="SearchWrap" type="PanelContainer" parent="MainVBox/HeaderBar/HeaderContent"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 3.0
-mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_search_field")
 
-[node name="SearchLabel" type="Label" parent="MainVBox/HeaderBar/HeaderContent/SearchField"]
+[node name="SearchHBox" type="HBoxContainer" parent="MainVBox/HeaderBar/HeaderContent/SearchWrap"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+theme_override_constants/separation = 10
+
+[node name="SearchIcon" type="PanelContainer" parent="MainVBox/HeaderBar/HeaderContent/SearchWrap/SearchHBox"]
+custom_minimum_size = Vector2(14, 14)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_search_icon")
+
+[node name="SearchField" type="LineEdit" parent="MainVBox/HeaderBar/HeaderContent/SearchWrap/SearchHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_fonts/font = ExtResource("5_fontui")
 theme_override_font_sizes/font_size = 14
-text = "Search community maps… (coming soon)"
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+theme_override_colors/font_placeholder_color = Color(0.431373, 0.4, 0.462745, 1)
+placeholder_text = "Search community maps…"
 
-[node name="SortRow" type="HBoxContainer" parent="MainVBox/HeaderBar/HeaderContent"]
+[node name="SortWrap" type="PanelContainer" parent="MainVBox/HeaderBar/HeaderContent"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_sort_pill")
+
+[node name="SortRow" type="HBoxContainer" parent="MainVBox/HeaderBar/HeaderContent/SortWrap"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="TopRatedChip" type="PanelContainer" parent="MainVBox/HeaderBar/HeaderContent/SortRow"]
+[node name="FiltersButton" type="Button" parent="MainVBox/HeaderBar/HeaderContent"]
+unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_chip")
-
-[node name="TopRatedLabel" type="Label" parent="MainVBox/HeaderBar/HeaderContent/SortRow/TopRatedChip"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
-theme_override_fonts/font = ExtResource("4_fontmono")
-theme_override_font_sizes/font_size = 12
-text = "Top rated"
-
-[node name="FiltersChip" type="PanelContainer" parent="MainVBox/HeaderBar/HeaderContent"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_chip")
-
-[node name="FiltersLabel" type="Label" parent="MainVBox/HeaderBar/HeaderContent/FiltersChip"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
-theme_override_fonts/font = ExtResource("4_fontmono")
-theme_override_font_sizes/font_size = 12
 text = "Filters"
 
 [node name="BackButton" type="Button" parent="MainVBox/HeaderBar/HeaderContent"]
@@ -163,16 +193,87 @@ layout_mode = 2
 custom_minimum_size = Vector2(90, 0)
 text = "Back"
 
-[node name="EmptyStateCenter" type="CenterContainer" parent="MainVBox"]
+[node name="ContentMargin" type="MarginContainer" parent="MainVBox"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 28
 
-[node name="EmptyStateVBox" type="VBoxContainer" parent="MainVBox/EmptyStateCenter"]
+[node name="ContentStack" type="Control" parent="MainVBox/ContentMargin"]
+layout_mode = 2
+
+[node name="LoadingState" type="CenterContainer" parent="MainVBox/ContentMargin/ContentStack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LoadingLabel" type="Label" parent="MainVBox/ContentMargin/ContentStack/LoadingState"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+theme_override_fonts/font = ExtResource("5_fontui")
+theme_override_font_sizes/font_size = 15
+text = "Loading community maps…"
+
+[node name="ErrorState" type="CenterContainer" parent="MainVBox/ContentMargin/ContentStack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ErrorVBox" type="VBoxContainer" parent="MainVBox/ContentMargin/ContentStack/ErrorState"]
 layout_mode = 2
 theme_override_constants/separation = 12
 alignment = 1
 
-[node name="EmptyHeadline" type="Label" parent="MainVBox/EmptyStateCenter/EmptyStateVBox"]
+[node name="ErrorHeadline" type="Label" parent="MainVBox/ContentMargin/ContentStack/ErrorState/ErrorVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+theme_override_fonts/font = ExtResource("3_fontdisplay")
+theme_override_font_sizes/font_size = 24
+text = "Couldn't reach the map hub"
+horizontal_alignment = 1
+
+[node name="ErrorMessageLabel" type="Label" parent="MainVBox/ContentMargin/ContentStack/ErrorState/ErrorVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+theme_override_fonts/font = ExtResource("5_fontui")
+theme_override_font_sizes/font_size = 14
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="RetryButton" type="Button" parent="MainVBox/ContentMargin/ContentStack/ErrorState/ErrorVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Retry"
+
+[node name="EmptyState" type="CenterContainer" parent="MainVBox/ContentMargin/ContentStack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="EmptyVBox" type="VBoxContainer" parent="MainVBox/ContentMargin/ContentStack/EmptyState"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="EmptyHeadline" type="Label" parent="MainVBox/ContentMargin/ContentStack/EmptyState/EmptyVBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
 theme_override_fonts/font = ExtResource("3_fontdisplay")
@@ -180,12 +281,160 @@ theme_override_font_sizes/font_size = 28
 text = "No community maps yet"
 horizontal_alignment = 1
 
-[node name="EmptySubtext" type="Label" parent="MainVBox/EmptyStateCenter/EmptyStateVBox"]
+[node name="EmptySubtext" type="Label" parent="MainVBox/ContentMargin/ContentStack/EmptyState/EmptyVBox"]
 custom_minimum_size = Vector2(480, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
 theme_override_fonts/font = ExtResource("5_fontui")
 theme_override_font_sizes/font_size = 14
-text = "Map sharing is coming in a future update. Once it launches, community beatmaps will appear here to browse, rate, and download."
+text = "Check back soon — maps published by other players will show up here to browse and download."
 horizontal_alignment = 1
 autowrap_mode = 3
+
+[node name="GridScroll" type="ScrollContainer" parent="MainVBox/ContentMargin/ContentStack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="MapGrid" type="GridContainer" parent="MainVBox/ContentMargin/ContentStack/GridScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 22
+theme_override_constants/v_separation = 22
+columns = 5
+
+[node name="DetailScroll" type="ScrollContainer" parent="MainVBox/ContentMargin/ContentStack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="DetailVBox" type="VBoxContainer" parent="MainVBox/ContentMargin/ContentStack/DetailScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 24
+
+[node name="DetailBackButton" type="Button" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+flat = true
+text = "‹ Back to maps"
+
+[node name="DetailColumns" type="HBoxContainer" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="LeftColumnPanel" type="PanelContainer" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_left_column")
+
+[node name="LeftColumn" type="VBoxContainer" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/LeftColumnPanel"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="CoverPanel" type="PanelContainer" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/LeftColumnPanel/LeftColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DetailTitle" type="Label" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/LeftColumnPanel/LeftColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+theme_override_fonts/font = ExtResource("3_fontdisplay")
+theme_override_font_sizes/font_size = 32
+text = ""
+autowrap_mode = 3
+
+[node name="DetailSubLabel" type="RichTextLabel" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/LeftColumnPanel/LeftColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_fonts/normal_font = ExtResource("5_fontui")
+theme_override_font_sizes/normal_font_size = 15
+theme_override_colors/default_color = Color(0.654902, 0.623529, 0.682353, 1)
+bbcode_enabled = true
+text = ""
+fit_content = true
+scroll_active = false
+
+[node name="DetailDifficultyRow" type="HBoxContainer" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/LeftColumnPanel/LeftColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="DetailStatsRow" type="HBoxContainer" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/LeftColumnPanel/LeftColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 28
+
+[node name="ButtonSpacer" type="Control" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/LeftColumnPanel/LeftColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DetailButtonsRow" type="HBoxContainer" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/LeftColumnPanel/LeftColumn"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="DownloadButton" type="Button" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/LeftColumnPanel/LeftColumn/DetailButtonsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Download"
+
+[node name="PreviewButton" type="Button" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/LeftColumnPanel/LeftColumn/DetailButtonsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(180, 0)
+text = "Preview"
+
+[node name="DownloadStatusLabel" type="Label" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/LeftColumnPanel/LeftColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_fontmono")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+text = ""
+
+[node name="RightColumnPanel" type="PanelContainer" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 3
+custom_minimum_size = Vector2(640, 0)
+theme_override_styles/panel = SubResource("StyleBoxFlat_right_column")
+
+[node name="LeaderboardVBox" type="VBoxContainer" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/RightColumnPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="LeaderboardHeader" type="Label" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/RightColumnPanel/LeaderboardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+theme_override_fonts/font = ExtResource("3_fontdisplay")
+theme_override_font_sizes/font_size = 18
+text = "Leaderboard"
+
+[node name="LeaderboardStateLabel" type="Label" parent="MainVBox/ContentMargin/ContentStack/DetailScroll/DetailVBox/DetailColumns/RightColumnPanel/LeaderboardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_fontui")
+theme_override_font_sizes/font_size = 14
+autowrap_mode = 3
+text = "Leaderboard coming soon — online scores aren't tracked yet."

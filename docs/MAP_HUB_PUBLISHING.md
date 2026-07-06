@@ -32,6 +32,7 @@ See "Future: GitHub Releases" below for when to reconsider this.
         {"name": "Hard", "star_rating": 4.7}
       ],
       "download_count": 0,
+      "play_count": 0,
       "rating": 0.0,
       "updated_at": "2026-07-03"
     }
@@ -52,6 +53,7 @@ Top-level: a single `"maps"` array. Each entry:
 | `cover_url` | string | Absolute URL to cover art, or `""` if none. Not yet produced by the editor's export flow (no cover-art picker built) — expect this to be empty for the foreseeable future. |
 | `difficulties` | array of `{name, star_rating}` | One entry per difficulty in the bundle, in the same order the bundle stores them. Mirrors `manifest.json`'s `difficulties` list inside the bundle itself, minus `chartPath`/`noteCount` (those are internal to the bundle, not needed by the browse grid). |
 | `download_count` | number | Times downloaded. Not tracked server-side yet — always `0` until there's a backend to increment it. |
+| `play_count` | number | Times played (distinct from downloads — a map can be replayed many times after one download). Not tracked server-side yet — always `0` until there's a backend. |
 | `rating` | number | Average community rating. Not tracked server-side yet — always `0.0` until there's a backend. |
 | `updated_at` | string | ISO date (`YYYY-MM-DD`) the entry was last published/updated. |
 

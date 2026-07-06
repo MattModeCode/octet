@@ -501,9 +501,12 @@ func _build_song_row(song: Dictionary, song_index: int) -> PanelContainer:
 	button.flat = true
 	button.focus_mode = Control.FOCUS_NONE
 	button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.pressed.connect(_on_row_pressed.bind(song_index))
+	# Added last (not moved behind hbox) so it stays the topmost child and
+	# actually receives clicks -- hbox's default MOUSE_FILTER_STOP was
+	# swallowing every click when this button sat behind it.
 	panel.add_child(button)
-	panel.move_child(button, 0)
 
 	_row_duration_labels.append(duration_label)
 	return panel

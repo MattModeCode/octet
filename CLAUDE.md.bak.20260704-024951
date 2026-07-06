@@ -44,5 +44,3 @@ Five persistent subagents live in `.claude/agents/`: **gameplay** (`game/` + `au
 - **Default agent per work type:** gameplay bugs/scoring/timing → `gameplay`; beat-mapping editor, BPM/offset detection, `.oct` chart authoring → `editor`; menu/screen layout, navigation, mockup-fidelity passes → `ui-screens`; online features, Firebase, Map Hub backend → `netcode`; "did this break anything" / running the suite → `test-runner`.
 - **Stay in the main session** for judgment calls, quick one-file edits, and tightly-coupled cross-file changes — especially anything touching the shared zone above or a `core/` data model whose change ripples across domains. Don't dispatch a subagent for work that's faster and safer to just do directly.
 - **Subagents cannot spawn subagents.** All decomposition and dispatch decisions stay in the main session; an agent that hits a subtask outside its scope reports back rather than delegating further.
-
-Obsidian: this project's brain is at C:\Users\1chin\OneDrive\Documents\SecondBrain\01-Projects\octet\ — read/write only there and 00-Global.

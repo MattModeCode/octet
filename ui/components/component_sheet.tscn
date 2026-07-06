@@ -1,8 +1,10 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://ui/components/component_sheet.gd" id="1_componentsheet"]
+[ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
 
 [node name="ComponentSheet" type="Control"]
+theme = ExtResource("2_theme")
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

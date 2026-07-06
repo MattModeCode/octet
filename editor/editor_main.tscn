@@ -312,8 +312,9 @@ horizontal_scroll_mode = 0
 
 [node name="NoteTimelineView" type="Control" parent="MainVBox/BodyHBox/TimelineScroll"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(800, 1800)
+custom_minimum_size = Vector2(0, 1800)
 layout_mode = 2
+size_flags_horizontal = 3
 script = ExtResource("4_timelinegd")
 
 [node name="InspectorPanel" type="PanelContainer" parent="MainVBox/BodyHBox"]
@@ -414,7 +415,7 @@ theme_override_constants/separation = 12
 
 [node name="TimeZoomLabel" type="Label" parent="MainVBox/BottomUtilityBar/BottomUtilityContent"]
 layout_mode = 2
-text = "Zoom (time)"
+text = "Zoom"
 vertical_alignment = 1
 
 [node name="TimeZoomSlider" type="HSlider" parent="MainVBox/BottomUtilityBar/BottomUtilityContent"]
@@ -422,21 +423,7 @@ unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(140, 0)
 min_value = 1.0
-max_value = 8.0
-step = 0.1
-value = 1.0
-
-[node name="RowZoomLabel" type="Label" parent="MainVBox/BottomUtilityBar/BottomUtilityContent"]
-layout_mode = 2
-text = "Zoom (lanes)"
-vertical_alignment = 1
-
-[node name="RowZoomSlider" type="HSlider" parent="MainVBox/BottomUtilityBar/BottomUtilityContent"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(140, 0)
-min_value = 1.0
-max_value = 3.0
+max_value = 16.0
 step = 0.1
 value = 1.0
 
