@@ -200,7 +200,7 @@ func _build_chart(song: Dictionary, diff: Dictionary, bpm: float, offset_ms: flo
 	chart.metadata = ChartMetadata.new()
 	chart.metadata.title = song.title
 	chart.metadata.artist = song.artist
-	chart.metadata.mapper = "Auto (Octet pattern generator)"
+	chart.metadata.mapper = "Octet Team"
 	chart.metadata.difficulty_name = diff.name
 	chart.metadata.star_rating = STAR_RATING_BY_TIER.get(tier, 3.0)
 	chart.metadata.tags = PackedStringArray(["auto-generated", "signature:%s" % song.motif])

@@ -118,6 +118,10 @@ func _ready() -> void:
 	_rebuild_list()
 
 	_search_field.text_changed.connect(_on_search_changed)
+	# Play is this screen's primary confirm action -- it gets Sfx's distinct
+	# two-note confirm cue (_on_play_pressed) instead of the generic auto-click
+	# every other button gets, so it opts out of Sfx's tree-wide click hook.
+	_play_button.set_meta(Sfx.NO_CLICK_SFX_META, true)
 	_play_button.pressed.connect(_on_play_pressed)
 	_modifiers_button.pressed.connect(_on_modifiers_pressed)
 
@@ -541,10 +545,21 @@ func _build_song_row(song: Dictionary, song_index: int) -> PanelContainer:
 	hbox.add_theme_constant_override("separation", 18)
 	panel.add_child(hbox)
 
+	# Real cover art (SongLibrary.resolve_cover_path via _get_song_cover_texture,
+	# same source as the detail panel/_update_detail_panel) filling the 64x64
+	# square by centre-cropping rather than distorting; falls back to the
+	# tiled stripe placeholder for songs with no cover.jpg.
 	var cover := TextureRect.new()
-	cover.texture = _stripe_texture
-	cover.stretch_mode = TextureRect.STRETCH_TILE
 	cover.custom_minimum_size = ROW_COVER_SIZE
+	cover.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	cover.clip_contents = true
+	var real_cover := _get_song_cover_texture(song)
+	if real_cover != null:
+		cover.texture = real_cover
+		cover.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	else:
+		cover.texture = _stripe_texture
+		cover.stretch_mode = TextureRect.STRETCH_TILE
 	hbox.add_child(cover)
 
 	var text_col := VBoxContainer.new()
@@ -764,6 +779,7 @@ func _on_play_pressed() -> void:
 	# Back button doesn't mistakenly route this run back to the editor.
 	PlaySession.playtest_origin_scene = ""
 	_stop_preview()
+	Sfx.play_confirm()
 	SceneRouter.goto_scene_pushed(GAMEPLAY_SCENE)
 
 

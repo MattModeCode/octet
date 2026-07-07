@@ -16,6 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Octet"
 config/description="An eight-lane keyboard rhythm game with a built-in beat-mapping editor and an online map community."
+config/version="1.0.0"
 run/main_scene="res://ui/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://assets/icons/icon.svg"
@@ -32,6 +33,7 @@ EditorSession="*res://editor/editor_session.gd"
 Conductor="*res://audio/conductor.gd"
 SceneRouter="*res://ui/scene_router.gd"
 Net="*res://net/net_client.gd"
+Sfx="*res://audio/sfx.gd"
 
 [audio]
 
@@ -51,3 +53,4 @@ window/stretch/mode="canvas_items"
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true

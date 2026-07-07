@@ -53,3 +53,4 @@ Thumbs.db
 /*.jpg
 *.bak
 *.bak.*
+.gstack/

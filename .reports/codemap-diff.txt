@@ -1,0 +1,30 @@
+Octet codemap generation report
+Generated: 2026-07-07
+Run: initial (no prior docs/CODEMAPS/ existed — nothing to diff against)
+
+Files added:
+  docs/CODEMAPS/architecture.md   (system overview, autoload graph, data flows)
+  docs/CODEMAPS/gameplay.md       (Conductor, calibration, JudgeEngine, Grading)
+  docs/CODEMAPS/editor.md         (DSP pipeline, editor shell, playtest round-trip)
+  docs/CODEMAPS/ui.md             (SceneRouter, scene graph, components)
+  docs/CODEMAPS/data.md           (Chart resource, .oct/.octet formats, song storage)
+  docs/CODEMAPS/dependencies.md   (Godot 4.7, Map Hub live, Firebase stub, no 3rd-party pkgs)
+
+Files removed: none
+Files modified: none (first generation)
+
+Source files scanned: 57 .gd files across core/, audio/, game/, editor/, ui/, net/
+plus project.godot (autoload registration order, engine version) and one sample
+.oct file (songs/one-voice/easy.oct) for schema verification.
+
+New dependencies detected: none beyond what was already known — Godot 4.7 engine,
+no addons/, no third-party GDExtensions. Map Hub confirmed live (GitHub raw file
+hosting); Firebase confirmed as a hard stub (Net.is_online() always false).
+
+Architecture changes since last scan: n/a (first scan).
+
+Staleness warnings: n/a (first scan — no prior codemaps to be stale).
+
+Next run: re-run /update-codemaps after the next feature pass (e.g. Stage 7 /
+M4 online core, when Firebase moves from stub to real client) to keep
+dependencies.md and architecture.md's Map Hub data-flow section current.

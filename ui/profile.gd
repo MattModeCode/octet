@@ -49,12 +49,24 @@ func _populate_best_scores() -> void:
 		var best: Dictionary = entries[chart_path]
 		var chart: Chart = OctIO.load_oct(chart_path)
 		var title := String(chart_path).get_file()
-		if chart != null and not chart.metadata.title.is_empty():
-			title = chart.metadata.title
+		var difficulty_name := String(best.get("difficulty_name", ""))
+		var star_rating := float(best.get("star_rating", 0.0))
+		if chart != null:
+			if not chart.metadata.title.is_empty():
+				title = chart.metadata.title
+			# Fallback for records saved before difficulty_name/star_rating were
+			# persisted onto the score entry itself (see best_for()'s doc comment)
+			# -- re-derive from the chart's own metadata so older bests still show
+			# their difficulty instead of falling through format_display_name()'s
+			# bare-title branch.
+			if difficulty_name.is_empty():
+				difficulty_name = chart.metadata.difficulty_name
+			if star_rating == 0.0:
+				star_rating = chart.metadata.star_rating
 		rows.append({
 			"title": title,
-			"difficulty_name": String(best.get("difficulty_name", "")),
-			"star_rating": float(best.get("star_rating", 0.0)),
+			"difficulty_name": difficulty_name,
+			"star_rating": star_rating,
 			"score": int(best.get("score", 0)),
 			"grade": String(best.get("grade", "—")),
 		})
