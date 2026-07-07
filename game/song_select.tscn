@@ -225,6 +225,7 @@ layout_mode = 2
 size_flags_vertical = 0
 
 [node name="PreviewLabel" type="Label" parent="MainRow/DetailPane/DetailVBox/PreviewBox"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4

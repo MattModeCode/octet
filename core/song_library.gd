@@ -6,19 +6,29 @@
 class_name SongLibrary
 extends RefCounted
 
+## Kept as a named constant (test fixtures still live here) but deliberately
+## NOT scanned by scan_charts() below -- a fixture chart authored for engine
+## tests (e.g. tests/fixtures/gameplay_fixture.oct) has no business showing
+## up as a playable song in Song Select or the home screen's ambient-music
+## picker. Direct-load tests that need a fixture chart still reference it by
+## its literal res:// path (see tests/test_gameplay.gd), which is unaffected.
 const FIXTURE_DIR: String = "res://tests/fixtures"
 const SONGS_DIR: String = "res://songs"
 const USER_SONGS_DIR: String = "user://songs"
 
+## Cover-art filename tried, in order, next to a song's .oct file(s) --
+## see resolve_cover_path() below.
+const COVER_FILENAMES: PackedStringArray = ["cover.jpg", "cover.png"]
 
-## Recursively scans FIXTURE_DIR/SONGS_DIR/USER_SONGS_DIR for `.oct` files --
-## songs under SONGS_DIR live one level down in a per-song folder (e.g.
+
+## Recursively scans SONGS_DIR/USER_SONGS_DIR for `.oct` files -- songs
+## under SONGS_DIR live one level down in a per-song folder (e.g.
 ## `res://songs/thats-why-i-gave-up-on-music/hard.oct`) alongside their audio
 ## file, so a flat single-level scan would miss them. Returns each chart as
 ## {"path": String, "chart": Chart, "mtime": int}.
 static func scan_charts() -> Array[Dictionary]:
 	var entries: Array[Dictionary] = []
-	for dir_path in [FIXTURE_DIR, SONGS_DIR, USER_SONGS_DIR]:
+	for dir_path in [SONGS_DIR, USER_SONGS_DIR]:
 		_scan_recursive(dir_path, entries)
 	return entries
 
@@ -67,3 +77,22 @@ static func load_chart_audio(chart_path: String, chart: Chart) -> AudioStream:
 	if audio_path.is_empty() or not FileAccess.file_exists(audio_path):
 		return null
 	return AudioImport.load_audio_file(audio_path)
+
+
+## Resolves a song's cover-art image, relative to the directory [param
+## chart_path]'s .oct file lives in -- same directory-relative convention as
+## resolve_audio_path() above, since a song's cover.jpg/cover.png sits next
+## to its audio and every one of its difficulty .oct files. Tries
+## COVER_FILENAMES in order and returns the first that exists on disk, or ""
+## if [param chart_path] is empty or none of them exist (no cover-art
+## pipeline existed before this -- callers must fall back to the existing
+## stripe placeholder texture, never treat a missing cover as fatal).
+static func resolve_cover_path(chart_path: String) -> String:
+	if chart_path.is_empty():
+		return ""
+	var dir := chart_path.get_base_dir()
+	for cover_filename in COVER_FILENAMES:
+		var candidate := dir.path_join(cover_filename)
+		if FileAccess.file_exists(candidate):
+			return candidate
+	return ""

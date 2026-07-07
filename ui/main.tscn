@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://ui/main.gd" id="1_maingd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
@@ -132,6 +132,87 @@ content_margin_left = 27.0
 content_margin_top = 19.0
 content_margin_right = 27.0
 content_margin_bottom = 19.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_quit_panel"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 32.0
+content_margin_top = 28.0
+content_margin_right = 32.0
+content_margin_bottom = 28.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_quit_cancel_normal"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.164706, 0.141176, 0.192157, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 20.0
+content_margin_top = 14.0
+content_margin_right = 20.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_quit_cancel_hover"]
+bg_color = Color(0.086275, 0.07451, 0.105882, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 19.0
+content_margin_top = 13.0
+content_margin_right = 19.0
+content_margin_bottom = 13.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_quit_confirm_normal"]
+bg_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 20.0
+content_margin_top = 14.0
+content_margin_right = 20.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_quit_confirm_hover"]
+bg_color = Color(1, 0.32, 0.54, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 20.0
+content_margin_top = 14.0
+content_margin_right = 20.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_quit_confirm_pressed"]
+bg_color = Color(0.83, 0.12, 0.35, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+content_margin_left = 20.0
+content_margin_top = 14.0
+content_margin_right = 20.0
+content_margin_bottom = 14.0
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -473,3 +554,81 @@ theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
 theme_override_colors/font_hover_color = Color(0.960784, 0.945098, 0.960784, 1)
 text = "Settings"
+
+[node name="ConfirmQuitOverlay" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047059, 0.039216, 0.058824, 0.85)
+mouse_filter = 0
+
+[node name="QuitPanel" type="PanelContainer" parent="ConfirmQuitOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -100.0
+offset_right = 180.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_quit_panel")
+
+[node name="QuitVBox" type="VBoxContainer" parent="ConfirmQuitOverlay/QuitPanel"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="ConfirmQuitOverlay/QuitPanel/QuitVBox"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "Quit Octet?"
+
+[node name="MessageLabel" type="Label" parent="ConfirmQuitOverlay/QuitPanel/QuitVBox"]
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
+theme_override_fonts/font = ExtResource("6_fontui")
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+text = "You'll leave the game and return to your desktop."
+
+[node name="ButtonRow" type="HBoxContainer" parent="ConfirmQuitOverlay/QuitPanel/QuitVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="CancelButton" type="Button" parent="ConfirmQuitOverlay/QuitPanel/QuitVBox/ButtonRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_quit_cancel_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_quit_cancel_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_quit_cancel_hover")
+theme_override_styles/focus = SubResource("StyleBoxFlat_quit_cancel_hover")
+theme_override_fonts/font = ExtResource("6_fontui")
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "Cancel"
+
+[node name="ConfirmQuitButton" type="Button" parent="ConfirmQuitOverlay/QuitPanel/QuitVBox/ButtonRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_quit_confirm_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_quit_confirm_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_quit_confirm_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_quit_confirm_hover")
+theme_override_fonts/font = ExtResource("6_fontui")
+theme_override_colors/font_color = Color(0.047, 0.039, 0.059, 1)
+text = "Quit"

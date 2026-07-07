@@ -1,12 +1,12 @@
 {
   "format_version": 1,
   "metadata": {
-    "title": "M1a fixture",
+    "title": "Gameplay Engine Fixture",
     "artist": "Octet",
-    "mapper": "Stage 2",
+    "mapper": "Test fixture",
     "difficulty_name": "Normal",
     "star_rating": 1.0,
-    "tags": ["fixture", "stage2"],
+    "tags": ["fixture"],
     "preview_time_ms": 1000
   },
   "audio": {

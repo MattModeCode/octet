@@ -13,9 +13,10 @@ extends Control
 ## This scene owns all state; playfield_view.gd is a pure display layer fed
 ## every frame, same split as editor/waveform_view.gd under editor_main.gd.
 ##
-## Falls back to the Stage 2 fixture when run standalone (F6) with no
-## PlaySession chart queued, e.g. during development.
-const FALLBACK_CHART_PATH: String = "res://tests/fixtures/m1a_fixture.oct"
+## Falls back to a small hand-authored fixture chart when run standalone
+## (F6) with no PlaySession chart queued, e.g. during development. Same
+## fixture tests/test_gameplay.gd's engine round-trip test loads.
+const FALLBACK_CHART_PATH: String = "res://tests/fixtures/gameplay_fixture.oct"
 const RESULTS_SCENE: String = "res://game/results.tscn"
 const GAMEPLAY_SCENE: String = "res://game/gameplay.tscn"
 

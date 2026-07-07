@@ -3,11 +3,11 @@
     {
       "id": "thats-why-i-gave-up-on-music",
       "title": "That's Why I Gave Up On Music",
-      "artist": "Unknown Artist",
+      "artist": "Yorushika",
       "mapper": "Auto (WP-C onset pipeline)",
       "bpm": 126,
       "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/thats-why-i-gave-up-on-music.octet",
-      "cover_url": "",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/thats-why-i-gave-up-on-music/cover.jpg",
       "difficulties": [
         {"name": "Easy", "star_rating": 1.8},
         {"name": "Normal", "star_rating": 3.2},
@@ -17,6 +17,91 @@
       "play_count": 0,
       "rating": 0.0,
       "updated_at": "2026-07-03"
+    },
+    {
+      "id": "unravel-tokyo-ghoul",
+      "title": "Unravel",
+      "artist": "TK from Ling tosite sigure",
+      "mapper": "Auto (Octet pattern generator)",
+      "bpm": 133,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/unravel-tokyo-ghoul.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/unravel-tokyo-ghoul/cover.jpg",
+      "difficulties": [
+        {"name": "Normal", "star_rating": 3.4},
+        {"name": "Very Hard", "star_rating": 6.2}
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0.0,
+      "updated_at": "2026-07-07"
+    },
+    {
+      "id": "one-voice",
+      "title": "One Voice",
+      "artist": "Rokudenashi",
+      "mapper": "Auto (Octet pattern generator)",
+      "bpm": 129,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/one-voice.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/one-voice/cover.jpg",
+      "difficulties": [
+        {"name": "Easy", "star_rating": 2.2},
+        {"name": "Hard", "star_rating": 4.8}
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0.0,
+      "updated_at": "2026-07-07"
+    },
+    {
+      "id": "a-thousand-years",
+      "title": "A Thousand Years",
+      "artist": "John Michael Howell, JVKE & ZVC",
+      "mapper": "Auto (Octet pattern generator)",
+      "bpm": 115,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/a-thousand-years.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/a-thousand-years/cover.jpg",
+      "difficulties": [
+        {"name": "Very Easy", "star_rating": 1.0},
+        {"name": "Normal", "star_rating": 3.4}
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0.0,
+      "updated_at": "2026-07-07"
+    },
+    {
+      "id": "story-of-a-warrior",
+      "title": "Story Of A Warrior",
+      "artist": "John Michael Howell",
+      "mapper": "Auto (Octet pattern generator)",
+      "bpm": 103,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/story-of-a-warrior.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/story-of-a-warrior/cover.jpg",
+      "difficulties": [
+        {"name": "Normal", "star_rating": 3.4},
+        {"name": "Hard", "star_rating": 4.8}
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0.0,
+      "updated_at": "2026-07-07"
+    },
+    {
+      "id": "drowning-love",
+      "title": "Chasing Kou",
+      "artist": "Shuichi Sakamoto",
+      "mapper": "Auto (Octet pattern generator)",
+      "bpm": 162,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/drowning-love.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/drowning-love/cover.jpg",
+      "difficulties": [
+        {"name": "Easy", "star_rating": 2.2},
+        {"name": "Very Hard", "star_rating": 6.2}
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0.0,
+      "updated_at": "2026-07-07"
     }
   ]
 }

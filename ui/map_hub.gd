@@ -87,6 +87,14 @@ var _preview_start_sec: float = 0.0
 ## bar baked onto the bottom of the cover art) -- built at runtime alongside
 ## the stripe-texture placeholder since both are non-.tscn content.
 var _cover_progress_fill: ColorRect
+## cover_url -> Texture2D (or null for "fetched, failed to decode"), so the
+## same map's cover is only ever downloaded once per session regardless of
+## how many times its card re-renders or its detail view is revisited.
+var _cover_texture_cache: Dictionary = {}
+## The detail view's cover TextureRect, kept so _populate_detail() can swap
+## its texture per selected map (real cover art if the manifest entry has a
+## cover_url, else back to the shared stripe placeholder).
+var _detail_cover_rect: TextureRect
 
 
 func _ready() -> void:
@@ -284,6 +292,17 @@ func _build_card(map_dict: Dictionary) -> Control:
 	cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(cover)
 
+	var cover_url := String(map_dict.get("cover_url", ""))
+	if not cover_url.is_empty():
+		_request_cover_texture(cover_url, func(texture: Texture2D) -> void:
+			# The grid may have been rebuilt (re-sort/re-search) by the time
+			# this async fetch lands -- never touch a freed card.
+			if texture == null or not is_instance_valid(cover):
+				return
+			cover.texture = texture
+			cover.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		)
+
 	var title_label := Label.new()
 	title_label.text = String(map_dict.get("title", ""))
 	title_label.clip_text = true
@@ -360,6 +379,23 @@ func _on_card_pressed(map_dict: Dictionary) -> void:
 
 func _populate_detail(map_dict: Dictionary) -> void:
 	_stop_preview()
+
+	# Reset to the placeholder immediately (not just on failure) so a slow
+	# cover fetch never leaves the previously-viewed map's cover showing
+	# under this map's title/stats while it loads.
+	_detail_cover_rect.texture = _stripe_texture
+	_detail_cover_rect.stretch_mode = TextureRect.STRETCH_TILE
+	var cover_url := String(map_dict.get("cover_url", ""))
+	var map_id := String(map_dict.get("id", ""))
+	if not cover_url.is_empty():
+		_request_cover_texture(cover_url, func(texture: Texture2D) -> void:
+			# The player may have navigated to a different map by the time
+			# this async fetch lands -- never overwrite a newer selection.
+			if texture == null or _current_map_id() != map_id:
+				return
+			_detail_cover_rect.texture = texture
+			_detail_cover_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		)
 
 	_detail_title.text = String(map_dict.get("title", ""))
 	_detail_sub_label.text = "%s [color=#6E6676]· mapped by[/color] %s [color=#6E6676]· %d BPM[/color]" % [
@@ -667,8 +703,10 @@ func _on_preview_finished() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Cover-art placeholder (no cover-art pipeline exists yet -- cover_url is
-# always "" today -- mirrors game/song_select.gd's _build_stripe_texture()).
+# Cover art: real cover_url images fetched over HTTP (same request pattern as
+# Net.fetch_map_manifest()/download_map()), falling back to the stripe
+# placeholder below when a manifest entry has no cover_url or the fetch/
+# decode fails (mirrors game/song_select.gd's local-file equivalent).
 # ---------------------------------------------------------------------------
 
 func _build_stripe_texture() -> ImageTexture:
@@ -682,19 +720,71 @@ func _build_stripe_texture() -> ImageTexture:
 	return ImageTexture.create_from_image(image)
 
 
+## Fetches [param url] and calls [param on_texture] with the decoded
+## Texture2D, or null on any failure (no network, non-200 response,
+## undecodable image) -- callers must fall back to the stripe placeholder,
+## never treat a missing/failed cover as fatal. Same HTTPRequest-per-call
+## pattern as Net.fetch_map_manifest()/download_map(); cached by URL so a
+## cover already seen this session is served straight from
+## _cover_texture_cache without another round trip.
+func _request_cover_texture(url: String, on_texture: Callable) -> void:
+	if url.is_empty():
+		on_texture.call(null)
+		return
+	if _cover_texture_cache.has(url):
+		on_texture.call(_cover_texture_cache[url])
+		return
+
+	var request := HTTPRequest.new()
+	add_child(request)
+	request.request_completed.connect(
+		func(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+			request.queue_free()
+			var texture := _decode_cover_image(url, result, response_code, body)
+			_cover_texture_cache[url] = texture
+			on_texture.call(texture)
+	)
+	var err := request.request(url)
+	if err != OK:
+		request.queue_free()
+		on_texture.call(null)
+
+
+## Decodes an HTTPRequest response body as an image, picking the decoder by
+## [param url]'s extension (defaulting to JPEG, the format every cover this
+## project ships uses today). Returns null on any failure rather than
+## crashing on a bad response or unsupported format.
+func _decode_cover_image(url: String, result: int, response_code: int, body: PackedByteArray) -> Texture2D:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200 or body.is_empty():
+		return null
+
+	var image := Image.new()
+	var err: Error
+	match url.get_extension().to_lower():
+		"png":
+			err = image.load_png_from_buffer(body)
+		"webp":
+			err = image.load_webp_from_buffer(body)
+		_:
+			err = image.load_jpg_from_buffer(body)
+	if err != OK:
+		return null
+	return ImageTexture.create_from_image(image)
+
+
 ## Builds the cover art itself plus the mockup's scrubber overlay -- a thin
 ## translucent bar pinned to the cover's bottom edge with a play glyph and a
 ## progress fill. The mockup shows this as a static 24%-filled bar; here it's
 ## wired to real preview playback (0% idle, live position while a preview is
 ## playing) since Preview already exists as a real feature, not decoration.
 func _apply_cover_placeholder_style() -> void:
-	var stripe_rect := TextureRect.new()
-	stripe_rect.texture = _stripe_texture
-	stripe_rect.stretch_mode = TextureRect.STRETCH_TILE
-	stripe_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	stripe_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_detail_cover_rect = TextureRect.new()
+	_detail_cover_rect.texture = _stripe_texture
+	_detail_cover_rect.stretch_mode = TextureRect.STRETCH_TILE
+	_detail_cover_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_detail_cover_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_cover_panel.custom_minimum_size = Vector2(0, DETAIL_COVER_HEIGHT)
-	_cover_panel.add_child(stripe_rect)
+	_cover_panel.add_child(_detail_cover_rect)
 	_cover_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 
 	var scrubber_style := StyleBoxFlat.new()

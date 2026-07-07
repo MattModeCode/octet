@@ -55,6 +55,9 @@ const AMBIENT_VOLUME_DB := -14.0
 @onready var _columns_row: HBoxContainer = %ColumnsRow
 @onready var _name_label: Label = %NameLabel
 @onready var _rank_label: Label = %RankLabel
+@onready var _confirm_quit_overlay: ColorRect = %ConfirmQuitOverlay
+@onready var _confirm_quit_button: Button = %ConfirmQuitButton
+@onready var _cancel_quit_button: Button = %CancelButton
 
 var _glow_tween: Tween
 
@@ -211,6 +214,33 @@ func _wire_buttons() -> void:
 	_browse_maps_button.pressed.connect(_on_browse_maps_pressed)
 	_profile_button.pressed.connect(_on_profile_pressed)
 	_settings_button.pressed.connect(_on_settings_pressed)
+	_confirm_quit_button.pressed.connect(_on_confirm_quit_pressed)
+	_cancel_quit_button.pressed.connect(_hide_quit_confirm)
+
+
+## Root menu is the only screen with no ESC handling elsewhere in the app --
+## ESC here opens (or, on a second press, cancels) the quit confirmation
+## rather than navigating back, since this is the scene tree's root.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		if _confirm_quit_overlay.visible:
+			_hide_quit_confirm()
+		else:
+			_show_quit_confirm()
+
+
+func _show_quit_confirm() -> void:
+	_confirm_quit_overlay.visible = true
+	_cancel_quit_button.grab_focus() # default to the safe action
+
+
+func _hide_quit_confirm() -> void:
+	_confirm_quit_overlay.visible = false
+
+
+func _on_confirm_quit_pressed() -> void:
+	get_tree().quit()
 
 
 func _on_play_pressed() -> void:

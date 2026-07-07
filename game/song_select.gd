@@ -42,6 +42,7 @@ const SUBROW_INDENT := 82.0
 @onready var _sort_row: HBoxContainer = %SortRow
 @onready var _list_container: VBoxContainer = %ListContainer
 @onready var _preview_box: PanelContainer = %PreviewBox
+@onready var _preview_label: Label = %PreviewLabel
 @onready var _progress_fill: ColorRect = %ProgressFill
 @onready var _time_label: Label = %TimeLabel
 @onready var _title_label: Label = %TitleLabel
@@ -92,6 +93,13 @@ var _row_style_selected: StyleBoxFlat
 var _sort_style_active: StyleBoxFlat
 var _sort_style_inactive: StyleBoxFlat
 var _stripe_texture: ImageTexture
+## The preview box's cover TextureRect, kept so _update_detail_panel() can
+## swap its texture per selection (real cover art if the song has one,
+## else back to the shared stripe placeholder).
+var _preview_cover_rect: TextureRect
+## cover_path -> Texture2D (or null for "checked, no usable image"), so
+## re-rendering the list never re-reads a cover.jpg off disk twice.
+var _cover_texture_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -199,14 +207,44 @@ func _build_stripe_texture() -> ImageTexture:
 	return ImageTexture.create_from_image(image)
 
 
+## Real cover art for [param song] (any one of its difficulty .oct paths
+## resolves the same cover -- cover.jpg lives at the song-folder level, not
+## per-difficulty), or null if it has none / the image failed to load.
+## Callers fall back to _stripe_texture, same contract as
+## SongLibrary.resolve_cover_path() itself.
+func _get_song_cover_texture(song: Dictionary) -> Texture2D:
+	var diffs: Array = song.difficulties
+	if diffs.is_empty():
+		return null
+	var chart_path: String = String(diffs[0].path)
+	var cover_path := SongLibrary.resolve_cover_path(chart_path)
+	if cover_path.is_empty():
+		return null
+
+	if _cover_texture_cache.has(cover_path):
+		return _cover_texture_cache[cover_path]
+
+	var image := Image.new()
+	var err := image.load(cover_path)
+	if err != OK:
+		push_error("song_select: failed to load cover art %s (error %d)" % [cover_path, err])
+		_cover_texture_cache[cover_path] = null
+		return null
+
+	var texture := ImageTexture.create_from_image(image)
+	_cover_texture_cache[cover_path] = texture
+	return texture
+
+
 func _apply_preview_placeholder_style() -> void:
-	var stripe_rect := TextureRect.new()
-	stripe_rect.texture = _stripe_texture
-	stripe_rect.stretch_mode = TextureRect.STRETCH_TILE
-	stripe_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	stripe_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_preview_box.add_child(stripe_rect)
-	_preview_box.move_child(stripe_rect, 0)
+	_preview_cover_rect = TextureRect.new()
+	_preview_cover_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_preview_cover_rect.texture = _stripe_texture
+	_preview_cover_rect.stretch_mode = TextureRect.STRETCH_TILE
+	_preview_cover_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_preview_cover_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_preview_box.add_child(_preview_cover_rect)
+	_preview_box.move_child(_preview_cover_rect, 0)
 	_preview_box.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 
 
@@ -659,6 +697,15 @@ func _update_detail_panel() -> void:
 	var chart: Chart = selected_diff.chart
 	PlaySession.song_select_selected_path = String(selected_diff.path)
 	_start_preview(selected_diff)
+
+	var real_cover := _get_song_cover_texture(song)
+	if real_cover != null:
+		_preview_cover_rect.texture = real_cover
+		_preview_cover_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	else:
+		_preview_cover_rect.texture = _stripe_texture
+		_preview_cover_rect.stretch_mode = TextureRect.STRETCH_TILE
+	_preview_label.visible = real_cover == null
 
 	_title_label.text = String(song.title)
 	var bpm := 0.0

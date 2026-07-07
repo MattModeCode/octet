@@ -158,7 +158,7 @@ in-game editor to place notes by hand, and they must actually match the song's b
 **Root cause / current state:** the chart format is plain JSON with a `.oct` extension
 (`core/oct_io.gd` load/save, schema in `core/chart.gd` + `core/chart_metadata.gd` +
 `core/chart_audio.gd` + `core/timing_point.gd` + `core/chart_note.gd`). Example schema (see
-`tests/fixtures/m1a_fixture.oct`):
+`tests/fixtures/gameplay_fixture.oct`):
 ```json
 {
   "format_version": 1,

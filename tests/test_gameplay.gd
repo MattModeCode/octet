@@ -13,7 +13,7 @@ class_name TestGameplay
 ## reproduce the config/gameplay.tres / config/scoring.tres defaults
 ## directly without touching the Config autoload at all.
 
-const FIXTURE_OCT_PATH: String = "res://tests/fixtures/m1a_fixture.oct"
+const FIXTURE_OCT_PATH: String = "res://tests/fixtures/gameplay_fixture.oct"
 
 
 func get_tests() -> Array[Dictionary]:
@@ -210,7 +210,7 @@ func test_grade_thresholds() -> bool:
 	return ok
 
 
-## Loads the committed Stage 2 fixture chart through the real OctIO path
+## Loads the committed gameplay fixture chart through the real OctIO path
 ## (res:// -> Chart), then auto-plays it perfectly: the chord at 1000ms
 ## (lanes 0 and 4), the tap at 1500ms (lane 2), and the hold at
 ## 2000-2250ms (lane 3) held fully through release.
