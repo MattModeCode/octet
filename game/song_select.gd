@@ -33,10 +33,6 @@ const TUTORIAL_TAG: String = "tutorial"
 ## newcomer at the built-in Tutorial row and the Play button.
 const COACH_ID: String = "songselect_intro"
 
-## Loops the selected song's preview back to preview_time_ms after this many
-## seconds of playback, so the preview stays a short snippet rather than
-## playing out to the end of the song (WP-F).
-const PREVIEW_LOOP_SECONDS: float = 12.0
 const PREVIEW_VOLUME_DB: float = -6.0
 
 enum SortMode { DIFFICULTY, RECENT, TITLE }
@@ -95,8 +91,10 @@ var _selected_song_index: int = -1
 var _selected_difficulty_index: int = -1
 
 var _preview_player: AudioStreamPlayer
-var _preview_loop_timer: Timer
 var _preview_start_sec: float = 0.0
+## True while a preview should keep looping on natural end-of-stream; set
+## false on stop/switch so a late `finished` signal can't restart playback.
+var _preview_active: bool = false
 
 var _row_style_normal: StyleBoxFlat
 var _row_style_selected: StyleBoxFlat
@@ -311,9 +309,10 @@ func _style_play_button() -> void:
 
 ## Plain AudioStreamPlayer, not Conductor -- a selection preview has no
 ## judgment timing to derive, so Conductor's calibration-aware clock would be
-## pure overhead here (WP-F's own guidance). _preview_loop_timer restarts
-## playback at the chart's preview_time_ms every PREVIEW_LOOP_SECONDS so the
-## preview stays a short snippet instead of playing out the whole song.
+## pure overhead here (WP-F's own guidance). Playback starts at the chart's
+## preview_time_ms on first play; once the stream reaches its natural end,
+## _on_preview_finished restarts it from 0:00 so the whole song loops until
+## the player switches songs or leaves the screen.
 func _build_preview_player() -> void:
 	_preview_player = AudioStreamPlayer.new()
 	_preview_player.bus = "Music"
@@ -321,41 +320,31 @@ func _build_preview_player() -> void:
 	_preview_player.finished.connect(_on_preview_finished)
 	add_child(_preview_player)
 
-	_preview_loop_timer = Timer.new()
-	_preview_loop_timer.wait_time = PREVIEW_LOOP_SECONDS
-	_preview_loop_timer.timeout.connect(_on_preview_loop_timeout)
-	add_child(_preview_loop_timer)
-
 
 func _start_preview(diff_entry: Dictionary) -> void:
-	_preview_loop_timer.stop()
 	var chart: Chart = diff_entry.chart
 	var stream := SongLibrary.load_chart_audio(String(diff_entry.path), chart)
 	if stream == null:
 		_preview_player.stop()
+		_preview_active = false
 		return
 	_preview_start_sec = chart.metadata.preview_time_ms / 1000.0
 	_preview_player.stream = stream
 	_preview_player.play(_preview_start_sec)
-	_preview_loop_timer.start()
+	_preview_active = true
 
 
 func _stop_preview() -> void:
-	_preview_loop_timer.stop()
+	_preview_active = false
 	_preview_player.stop()
 
 
-func _on_preview_loop_timeout() -> void:
-	if _preview_player.playing:
-		_preview_player.seek(_preview_start_sec)
-
-
-## Safety net for a chart whose audio is shorter than PREVIEW_LOOP_SECONDS
-## past preview_time_ms -- without this the player would just go silent
-## until the loop timer next fires.
+## Fires when the stream reaches its natural end (not on _stop_preview's
+## explicit stop()). Restarts from the beginning so the full song loops
+## for as long as this preview is still the active one.
 func _on_preview_finished() -> void:
-	if not _preview_loop_timer.is_stopped():
-		_preview_player.play(_preview_start_sec)
+	if _preview_active:
+		_preview_player.play(0.0)
 
 
 ## Drives the preview playback bar's live elapsed time and pink progress

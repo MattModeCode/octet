@@ -374,6 +374,11 @@ func _build_card(map_dict: Dictionary) -> Control:
 	click_button.focus_mode = Control.FOCUS_NONE
 	click_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	click_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	# PASS, not the Button default STOP: this full-rect hit target sits over
+	# nearly the whole grid, so STOP swallowed every mouse-wheel scroll that
+	# started over a card -- users could only reach whatever fit on the first
+	# screen since GridScroll's ScrollContainer never saw the wheel event.
+	click_button.mouse_filter = Control.MOUSE_FILTER_PASS
 	click_button.pressed.connect(_on_card_pressed.bind(map_dict))
 	card.add_child(click_button)
 

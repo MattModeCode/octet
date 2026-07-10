@@ -22,7 +22,7 @@ See "Future: GitHub Releases" below for when to reconsider this.
       "id": "thats-why-i-gave-up-on-music",
       "title": "That's Why I Gave Up On Music",
       "artist": "Unknown Artist",
-      "mapper": "Auto (WP-C onset pipeline)",
+      "mapper": "Octet Team",
       "bpm": 126,
       "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/thats-why-i-gave-up-on-music.octet",
       "cover_url": "",

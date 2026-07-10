@@ -140,6 +140,10 @@ func _spotlight_rect(target: Control) -> Rect2:
 func _build_card() -> void:
 	_card = PanelContainer.new()
 	_card.custom_minimum_size = Vector2(CARD_WIDTH, 0.0)
+	# Hidden until _position_card() has sized and placed it at least once --
+	# otherwise the card can flash at its default zero/tiny size in the
+	# top-left corner for a frame before its first real position lands.
+	_card.visible = false
 	var style := StyleBoxFlat.new()
 	style.bg_color = DesignTokens.COLOR_SURFACE_RAISED
 	style.border_width_left = 3
@@ -157,6 +161,13 @@ func _build_card() -> void:
 	_card.add_child(vbox)
 
 	_title_label = Label.new()
+	# Same explicit-width fix as _body_label below: AUTOWRAP_WORD_SMART with
+	# no known width wraps against a ~1px minimum (one character per line),
+	# which is what actually produced the near-full-screen blank-looking
+	# card -- not the body text, the title. get_minimum_size() on an
+	# unconstrained autowrapping Label was the dominant term (699px seen for
+	# a 29-character title), dwarfing the 44px-floored body.
+	_title_label.custom_minimum_size = Vector2(CARD_WIDTH - 40.0, 0.0)
 	_title_label.add_theme_font_override("font", load("res://assets/fonts/font_display.tres"))
 	_title_label.add_theme_font_size_override("font_size", 18)
 	_title_label.add_theme_color_override("font_color", DesignTokens.COLOR_TEXT_PRIMARY)
@@ -164,10 +175,17 @@ func _build_card() -> void:
 	vbox.add_child(_title_label)
 
 	_body_label = RichTextLabel.new()
-	_body_label.custom_minimum_size = Vector2(0.0, 44.0) # matches game/tutorial.tscn's
-	# BodyLabel -- without a floor, fit_content reports height 0 until a second
-	# layout pass resolves it, which is what let the card collapse to an
-	# invisible sliver on screens that populate their coach steps dynamically.
+	# Explicit width, not just a height floor: fit_content wraps text against
+	# whatever width the label currently has, and until a real Container
+	# layout pass has propagated the card's width down to this child, that
+	# width is 0. get_combined_minimum_size() then estimates height against a
+	# near-zero wrap width -- every word forced onto its own line -- which is
+	# what made the card balloon to a near-full-screen-height blank box on
+	# screens that show the coach before a layout pass has landed (Map Hub's
+	# async-loaded grid). CARD_WIDTH minus the card's 20px+20px content
+	# margins gives the real final width up front so the very first fit
+	# calculation is already correct.
+	_body_label.custom_minimum_size = Vector2(CARD_WIDTH - 40.0, 44.0)
 	_body_label.bbcode_enabled = true
 	_body_label.fit_content = true
 	_body_label.scroll_active = false
@@ -212,10 +230,22 @@ func _build_card() -> void:
 
 ## Places _card near the current step's spotlight (below it if there's
 ## room, above it otherwise), or centers it when the step has no target.
-## Deferred one frame past _render_step() so _card.size reflects the text
-## just assigned rather than the previous step's (or zero, on the first
-## call).
+## Deferred one frame past _render_step() so the title/body text is already
+## assigned when this runs -- but a deferred call plus a `resized` signal
+## are still just heuristics for "has fit_content resolved yet", and on
+## screens that build their coach steps from async content (Map Hub's
+## grid) the heuristic can lose the race, leaving _card.size stale/zero
+## and collapsing the card to an invisible sliver. Force the size instead
+## of trusting it: get_combined_minimum_size() computes the PanelContainer's
+## content-driven minimum synchronously, with no layout-pass wait.
 func _position_card() -> void:
+	_card.size = _card.get_combined_minimum_size()
+	# Defence in depth: whatever the cause, a card taller than the overlay
+	# itself is never correct -- clamp so a bad fit_content estimate degrades
+	# to a scrollless-but-visible oversized card rather than an unusable
+	# near-full-screen blank one.
+	_card.size.y = minf(_card.size.y, size.y - SCREEN_EDGE_MARGIN * 2.0)
+	_card.visible = true
 	var target := _current_target()
 	if target == null or not is_instance_valid(target):
 		_card.position = (size - _card.size) * 0.5
