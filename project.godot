@@ -48,6 +48,7 @@ window/size/window_height_override=720
 window/size/mode=3
 window/size/resizable=false
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [rendering]
 
