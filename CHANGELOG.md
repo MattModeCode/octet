@@ -44,4 +44,6 @@ working (file-hosted) map community, built on Godot 4.7.
   Per-map and global leaderboards are UI-stubbed as "coming soon," not simulated.
   This is Roadmap milestone M4.
 
+[1.1.0]: https://github.com/MattModeCode/octet/releases/tag/v1.1.0
+[1.1.0]: https://github.com/MattModeCode/octet/releases/tag/v1.1.0
 [1.0.0]: https://github.com/MattModeCode/octet/releases/tag/v1.0.0

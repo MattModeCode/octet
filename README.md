@@ -69,7 +69,7 @@ directory over `raw.githubusercontent.com` (see [`docs/MAP_HUB_PUBLISHING.md`](d
 - ✅ **M1** — First playable: full eight-lane gameplay, judgments, calibration, results.
 - ✅ **M2** — Editor: waveform, manual BPM/offset, snapped placement, difficulties, save/export.
 - ✅ **M3** — Automatic BPM + beat detection. Shipped in **v1.0.0**, along with Map Hub
-  browse/download.
+  browse/download. **v1.1.0** added new maps and stability fixes. **v1.1.0** added new maps and stability fixes.
 - ⬜ **M4** — Online: accounts, real map-hub publishing, per-map leaderboards.
 - ⬜ **M5** — Community, global ranks, polish, signed/notarised installers.
 
