@@ -4,25 +4,41 @@
 
 # Octet
 
-**An eight-lane keyboard rhythm game with a built-in beat-mapping editor and an online map community.**
+**A fast, eight-lane keyboard rhythm game — drop in any song and play.**
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0C0A0F)
 ![Engine](https://img.shields.io/badge/engine-Godot%204.7-478CBF)
 ![License](https://img.shields.io/badge/license-MIT-FF2D6E)
 
+![Octet gameplay](docs/screenshots/gameplay.gif)
+
 </div>
 
 ---
 
-Octet is a fast, keyboard-native rhythm game. Notes fall down eight lanes mapped to the home row, and you hit them the instant they cross the judgment line. Drop in any song and the built-in editor finds the tempo and the beats for you, so mapping is placement, not hand-syncing by ear. Browse and download community-made maps from the shared Map Hub.
+Notes fall down eight lanes mapped to your home row (`A S D F` / `J K L ;`), and you hit them the instant they cross the line. Drop in any song and the built-in editor finds the tempo and beats for you automatically, so mapping is placement, not hand-syncing by ear. Browse and play community-made maps from the Map Hub, right in the client.
 
-## Features
+## See it in action
 
-- **Eight-lane play** on the home row — `A S D F` / `J K L ;` — with taps, chords, and holds, tiered timing windows, combo, live accuracy, and letter grades.
-- **Built-in editor** with automatic BPM and beat detection, a waveform + beat-grid overlay, snap-to-grid placement, multiple difficulties, and playtest-in-editor.
-- **Map Hub** — browse, search, and download community-made maps, played straight from the client. Publishing today is a manual, repo-owner step (see [Maps](#maps)); per-map and global leaderboards are planned but not live.
-- **Tight sync** via an audio-driven conductor clock and a per-machine calibration screen for audio and input latency.
-- **Windows, macOS, and Linux** native builds.
+| | |
+|---|---|
+| ![Gameplay](docs/screenshots/gameplay.png) **Gameplay** — eight-lane play with live combo, accuracy, and health. | ![Song select](docs/screenshots/song_select.png) **Song select** — browse the library, preview a track, pick a difficulty. |
+| ![Editor](docs/screenshots/editor.png) **Editor** — automatic BPM/beat detection, waveform, and beat-grid. | ![Map Hub](docs/screenshots/map_hub.png) **Map Hub** — browse and download community-made maps. |
+
+<div align="center">
+
+![Results](docs/screenshots/results.png)
+
+**Results** — grade, accuracy, combo, and a hit-timing breakdown.
+
+</div>
+
+## Why you'll like it
+
+- **Eight-lane play** on the home row, with taps, chords, and holds, tiered timing windows, and letter grades.
+- **The editor maps songs for you** — automatic BPM and beat detection, then snap-to-grid placement on top of a waveform and beat-grid overlay.
+- **Map Hub** — browse, search, and download community-made maps and play them straight from the client.
+- **Tight sync** — an audio-driven clock and a per-machine calibration screen keep hits feeling right on your setup.
 
 ## Controls
 
@@ -30,62 +46,36 @@ Octet is a fast, keyboard-native rhythm game. Notes fall down eight lanes mapped
 |------|---|---|---|---|---|---|---|---|
 | Key  | A | S | D | F | J | K | L | ; |
 
-All keys are rebindable. Scroll speed, offsets, and accessibility options are in settings.
+All keys are rebindable. Scroll speed, offsets, and accessibility options live in Settings.
 
 ## Download
 
-Native builds for Windows, macOS, and Linux are published under
-[Releases](../../releases). Grab the `v1.0.0` build for your platform:
+Grab a native build for your platform from [Releases](../../releases) (`v1.1.0`):
 
-- **Windows** — download `Octet-v1.0.0-windows-x64.zip`, extract, run
-  `Octet.exe`. Unsigned build — Windows SmartScreen will warn on first launch
-  (**More info → Run anyway**).
-- **macOS** — download `Octet-v1.0.0-macos-universal.zip`, extract. Unsigned/
-  un-notarised, so Gatekeeper blocks a plain double-click; before first launch
-  run `xattr -dr com.apple.quarantine Octet.app`, then open normally.
-- **Linux** — download `Octet-v1.0.0-linux-x86_64.zip`, extract, then
-  `chmod +x Octet.x86_64 && ./Octet.x86_64`.
+- **Windows** — extract `Octet-v1.1.0-windows-x64.zip`, run `Octet.exe`.
+- **macOS** — extract `Octet-v1.1.0-macos-universal.zip`, open `Octet.app`.
+- **Linux** — extract `Octet-v1.1.0-linux-x86_64.zip`, run `./Octet.x86_64`.
+
+<details>
+<summary>First-launch notes (unsigned builds)</summary>
+
+- **Windows** — SmartScreen will warn on first launch: **More info → Run anyway**.
+- **macOS** — un-notarised, so Gatekeeper blocks a plain double-click. Before first launch, run `xattr -dr com.apple.quarantine Octet.app`, then open normally.
+- **Linux** — make it executable first: `chmod +x Octet.x86_64`.
 
 Each release includes a `SHA256SUMS.txt` to verify your download.
 
-## Build from source
+</details>
 
-Requires **Godot 4.7**.
+## Under the hood
 
-```bash
-# clone, then open in Godot 4.7
-godot4 project.godot
-```
+Octet is built in Godot 4.7 (pure GDScript, including a hand-rolled audio-analysis FFT). Map Hub runs today as plain files served from this repo — no backend yet. More detail, if you want it:
 
-## Maps
-
-Maps are `.octet` bundles — a zip of the audio, one or more `.oct` chart files, and optional cover/background art. The `.oct` chart is JSON: metadata, timing points, and a list of notes. Full format in `docs/PROJECT_BRIEF.md` §4 and [`docs/CODEMAPS/data.md`](docs/CODEMAPS/data.md).
-
-Community maps in **Map Hub** are served today as plain files from this repo's `maps/`
-directory over `raw.githubusercontent.com` (see [`docs/MAP_HUB_PUBLISHING.md`](docs/MAP_HUB_PUBLISHING.md)) — no backend required. Per-map and global leaderboards are not live yet; the UI marks them "coming soon" rather than faking scores.
-
-## Roadmap
-
-- ✅ **M1** — First playable: full eight-lane gameplay, judgments, calibration, results.
-- ✅ **M2** — Editor: waveform, manual BPM/offset, snapped placement, difficulties, save/export.
-- ✅ **M3** — Automatic BPM + beat detection. Shipped in **v1.0.0**, along with Map Hub
-  browse/download. **v1.1.0** added new maps and stability fixes. **v1.1.0** added new maps and stability fixes.
-- ⬜ **M4** — Online: accounts, real map-hub publishing, per-map leaderboards.
-- ⬜ **M5** — Community, global ranks, polish, signed/notarised installers.
-
-## Documentation
-
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) — how the systems fit together and why
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — dev setup, running tests, project conventions
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — how the systems fit together
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — build from source, run tests, dev conventions
 - [`CHANGELOG.md`](CHANGELOG.md) — release history
-- [`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md) — full design and technical spec
+- [`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md) — full design and technical spec, including the `.octet`/`.oct` map format
 - [`docs/DESIGN_BRIEF.md`](docs/DESIGN_BRIEF.md) — visual identity and screens
-- [`docs/MAP_HUB_PUBLISHING.md`](docs/MAP_HUB_PUBLISHING.md) — Map Hub manifest schema and publishing
-- [`docs/CODEMAPS/`](docs/CODEMAPS/) — architecture, gameplay, editor, UI, data, and dependency codemaps
+- [`docs/CODEMAPS/`](docs/CODEMAPS/) — architecture, gameplay, editor, UI, and data codemaps
 
-## Tech
-
-Godot 4.7 (GDScript — no GDExtension in use; the audio-analysis FFT is hand-rolled in pure
-GDScript, see [`docs/CODEMAPS/editor.md`](docs/CODEMAPS/editor.md)). Map Hub runs today as
-plain files served from this repo over `raw.githubusercontent.com`. A backend for accounts
-and leaderboards (Roadmap M4) is planned but not yet implemented.
+**Roadmap:** shipped — full gameplay, editor with auto BPM/beat detection, and Map Hub browse/download (M1–M3, through v1.1.0). Next up — accounts, real map publishing, and leaderboards (M4), then community features and signed installers (M5).
