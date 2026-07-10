@@ -9,7 +9,7 @@ This is the operating contract for working on Octet in Claude Code. Read `docs/P
 
 ## 1. Obsidian + Graphify
 
-The Obsidian vault is the read-only source of truth for context, notes, and decisions. Read from it freely; treat vault files as reference, not something to rewrite as part of a task. Keep vault paths out of the repo. Graphify links notes to the work — when a session produces a durable decision or learning, surface it so it can be captured in the vault, not buried in code comments.
+The Obsidian vault is the read-only source of truth for context, notes, and decisions, with one exception: this project's own `learnings.md` and `decisions.md` (§6 note below) are append-only write targets. Read everything else freely; never rewrite reference vault files as part of a task. Keep vault paths out of the repo. Graphify links notes to the work — when a session produces a durable decision or learning, append it to the vault rather than burying it in code comments. A machine-wide `SessionEnd` hook already appends a mechanical task/files summary to `learnings.md` once per session; still append genuine **decisions** (architecture, product calls) to `decisions.md` yourself — that stays judgment-driven, not automated.
 
 ## 2. How to operate
 
@@ -22,7 +22,7 @@ The Obsidian vault is the read-only source of truth for context, notes, and deci
 
 ## 3. The self-improvement loop
 
-At the end of a working session, capture what was learned: patterns that worked, dead ends, and any decision that changes how future work should proceed. Fold durable lessons back into the vault, `CLAUDE.md`, or the relevant skill so the next session starts smarter. The project should get easier to work on over time, not harder.
+At the end of a working session, capture what was learned: patterns that worked, dead ends, and any decision that changes how future work should proceed. Fold durable lessons into `01-Projects/octet/learnings.md` (routine capture is automated — see §1), durable decisions into `decisions.md`, and anything about how Claude Code itself should operate here into this `CLAUDE.md` or the relevant skill. The project should get easier to work on over time, not harder.
 
 ## 4. gStack
 
@@ -30,7 +30,7 @@ Use gStack for planning and execution. Run `/autoplan` for detailed, milestone-l
 
 ## 5. Version control
 
-**Manual — handled by Matthew.** Do **not** run `git init`, `git add`, `git commit`, or `git push`. Do **not** install any auto-commit or auto-push hook (no `Stop` hook). Do not create or modify git configuration. Just create and edit files in place; Matthew commits and uploads the repository himself, at his own pace. A `.gitignore` is present for hygiene when he does.
+**Manual — handled by Matthew.** Do **not** run `git init`, `git add`, `git commit`, or `git push`. Do **not** install any auto-commit or auto-push hook (no git-touching `Stop` hook). The machine-wide `SessionEnd` vault-sync hook is exempt from this ban — it only appends a note to the Obsidian vault's `learnings.md`; it never touches git or this repo. Do not create or modify git configuration. Just create and edit files in place; Matthew commits and uploads the repository himself, at his own pace. A `.gitignore` is present for hygiene when he does.
 
 ## 6. Task orchestration
 

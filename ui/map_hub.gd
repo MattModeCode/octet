@@ -288,6 +288,8 @@ func _build_card(map_dict: Dictionary) -> Control:
 	var cover := TextureRect.new()
 	cover.texture = _stripe_texture
 	cover.stretch_mode = TextureRect.STRETCH_TILE
+	cover.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	cover.clip_contents = true
 	cover.custom_minimum_size = Vector2(0, CARD_COVER_HEIGHT)
 	cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(cover)
@@ -781,6 +783,8 @@ func _apply_cover_placeholder_style() -> void:
 	_detail_cover_rect = TextureRect.new()
 	_detail_cover_rect.texture = _stripe_texture
 	_detail_cover_rect.stretch_mode = TextureRect.STRETCH_TILE
+	_detail_cover_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_detail_cover_rect.clip_contents = true
 	_detail_cover_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_detail_cover_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_cover_panel.custom_minimum_size = Vector2(0, DETAIL_COVER_HEIGHT)
@@ -796,6 +800,16 @@ func _apply_cover_placeholder_style() -> void:
 	scrubber_style.content_margin_left = 14.0
 	scrubber_style.content_margin_right = 14.0
 
+	# CoverPanel is a PanelContainer, which force-fills every child to its
+	# content rect and ignores anchors/offsets. A plain Control (not a Container)
+	# still gets stretched to fill by the panel, but honours its OWN children's
+	# anchors -- so parent the scrubber to this overlay to pin it to the bottom
+	# instead of letting the panel stretch it full-height (which parked the play
+	# button in the middle of the cover).
+	var scrubber_overlay := Control.new()
+	scrubber_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cover_panel.add_child(scrubber_overlay)
+
 	var scrubber := PanelContainer.new()
 	scrubber.custom_minimum_size = Vector2(0, 38)
 	scrubber.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE, Control.PRESET_MODE_KEEP_SIZE)
@@ -805,7 +819,7 @@ func _apply_cover_placeholder_style() -> void:
 	scrubber.offset_top = scrubber.offset_bottom - 38
 	scrubber.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scrubber.add_theme_stylebox_override("panel", scrubber_style)
-	_cover_panel.add_child(scrubber)
+	scrubber_overlay.add_child(scrubber)
 
 	var scrubber_hbox := HBoxContainer.new()
 	scrubber_hbox.add_theme_constant_override("separation", 10)

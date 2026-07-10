@@ -1,5 +1,10 @@
 {
   "enabledPlugins": {
     "headroom@headroom-marketplace": true
+  },
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Firecrawl__firecrawl_search"
+    ]
   }
 }

@@ -1,25 +1,43 @@
 extends SceneTree
 ## Throwaway tooling script -- NOT part of the game or test suite. Generates
-## 2 difficulty charts for each of 5 new songs under res://songs/<slug>/,
-## reusing the real audio pipeline (editor/audio_import.gd's offline PCM
-## decode + editor/audio_analysis.gd's onset/BPM/offset detection -- the
-## same pipeline that produced songs/thats-why-i-gave-up-on-music/*.oct) so
+## difficulty charts for each song under res://songs/<slug>/, reusing the
+## real audio pipeline (editor/audio_import.gd's offline PCM decode +
+## editor/audio_analysis.gd's onset/BPM/offset detection -- the same
+## pipeline that produced songs/thats-why-i-gave-up-on-music/*.oct) so
 ## notes land on real detected onsets rather than a synthetic grid.
 ##
 ## On top of the onset-aligned base rhythm, each song gets a distinct
-## "signature motif" (arpeggio sweep, long holds, held chords, mirror
-## chords + spam, or wave trill + sinking spam) stamped at a few points
-## through the track, scaled tamer/denser by difficulty tier. Difficulty
-## density and motif intensity are controlled by the *_BY_TIER tables below.
+## "signature motif" stamped at a few points through the track, scaled
+## tamer/denser by difficulty tier. The original five motifs live inline
+## below; the 15 anime-OP motifs live in tools/chart_motifs.gd. Difficulty
+## density and motif intensity are controlled by the *_BY_TIER tables.
+##
+## Per-song optional fields beyond the original set:
+##   base_style: "random_walk" (default) | "adjacent_walk" | "offbeat"
+##               | "sparse" -- how the base rhythm is laned/timed.
+##   bpm_override: float -- trust this instead of detection (0/absent =
+##               trust detection; fixes half/double-time detections).
+##   difficulties: absent = all five tiers (ALL_DIFFICULTIES).
 ##
 ## Run once, by hand, via:
 ##   <path-to-godot> --headless -s tools/generate_charts.gd --path .
-## Safe to re-run (overwrites the 10 .oct files) or delete once the charts
-## are committed -- it's not wired into any autoload or registered test.
+## Safe to re-run (overwrites the generated .oct files) or delete once the
+## charts are committed -- it's not wired into any autoload or test.
+
+const ChartMotifs := preload("res://tools/chart_motifs.gd")
 
 const STAR_RATING_BY_TIER := {
 	"very_easy": 1.0, "easy": 2.2, "normal": 3.4, "hard": 4.8, "very_hard": 6.2,
 }
+## The full five-tier spread, used for any song without an explicit
+## "difficulties" list.
+const ALL_DIFFICULTIES: Array[Dictionary] = [
+	{"tier": "very_easy", "name": "Very Easy", "file": "very_easy"},
+	{"tier": "easy", "name": "Easy", "file": "easy"},
+	{"tier": "normal", "name": "Normal", "file": "normal"},
+	{"tier": "hard", "name": "Hard", "file": "hard"},
+	{"tier": "very_hard", "name": "Very Hard", "file": "very_hard"},
+]
 ## Keep every Nth detected onset for the base (non-motif) rhythm -- higher
 ## stride = sparser = easier.
 const STRIDE_BY_TIER := {
@@ -115,6 +133,122 @@ const SONGS: Array[Dictionary] = [
 			{"tier": "very_hard", "name": "Very Hard", "file": "very_hard"},
 		],
 	},
+	## -- anime OP/ED batch (all five tiers each; motifs in chart_motifs.gd).
+	## Titles/artists romanized: the UI fonts (Inter/Space Grotesk) have no
+	## CJK coverage, so Japanese metadata would render as tofu boxes.
+	{
+		"slug": "idol",
+		"title": "Idol",
+		"artist": "YOASOBI",
+		"audio_filename": "Idol.mp3",
+		"motif": "spotlight_switch",
+	},
+	{
+		"slug": "yuusha",
+		"title": "Yuusha",
+		"artist": "YOASOBI",
+		"audio_filename": "Yuusha.mp3",
+		"motif": "skip_gallop",
+	},
+	{
+		"slug": "kaibutsu",
+		"title": "Kaibutsu",
+		"artist": "YOASOBI",
+		"audio_filename": "Kaibutsu.mp3",
+		"motif": "prowl_pounce",
+	},
+	{
+		"slug": "kickback",
+		"title": "KICK BACK",
+		"artist": "Kenshi Yonezu",
+		"audio_filename": "KickBack.mp3",
+		"motif": "jackhammer_chaos",
+	},
+	{
+		"slug": "peace-sign",
+		"title": "Peace Sign",
+		"artist": "Kenshi Yonezu",
+		"audio_filename": "PeaceSign.mp3",
+		"motif": "rising_salute",
+		## Detector locked onto 132.5 (200/1.5); published/notated tempo is 200.
+		"bpm_override": 200.0,
+	},
+	{
+		"slug": "crossing-field",
+		"title": "Crossing Field",
+		"artist": "LiSA",
+		"audio_filename": "CrossingField.mp3",
+		"motif": "dual_stairs",
+	},
+	{
+		"slug": "unlasting",
+		"title": "Unlasting",
+		"artist": "LiSA",
+		"audio_filename": "Unlasting.mp3",
+		"motif": "ballad_swells",
+		"base_style": "sparse",
+		## Detector reported 172.3 (a ~1.45x subdivision artifact); the ballad's
+		## published tempo is 119.
+		"bpm_override": 119.0,
+	},
+	{
+		"slug": "zankyosanka",
+		"title": "Zankyosanka",
+		"artist": "Aimer",
+		"audio_filename": "Zankyosanka.mp3",
+		"motif": "hold_lattice",
+	},
+	{
+		"slug": "specialz",
+		"title": "SPECIALZ",
+		"artist": "King Gnu",
+		"audio_filename": "Specialz.mp3",
+		"motif": "offbeat_accent",
+		"base_style": "offbeat",
+	},
+	{
+		"slug": "kaikai-kitan",
+		"title": "Kaikai Kitan",
+		"artist": "Eve",
+		"audio_filename": "KaikaiKitan.mp3",
+		"motif": "flick_trill",
+	},
+	{
+		"slug": "inferno",
+		"title": "Inferno",
+		"artist": "Mrs. GREEN APPLE",
+		"audio_filename": "Inferno.mp3",
+		"motif": "flame_burst",
+	},
+	{
+		"slug": "silhouette",
+		"title": "Silhouette",
+		"artist": "KANA-BOON",
+		"audio_filename": "Silhouette.mp3",
+		"motif": "stream_rush",
+		"base_style": "adjacent_walk",
+	},
+	{
+		"slug": "crying-for-rain",
+		"title": "Kawaki wo Ameku",
+		"artist": "Minami",
+		"audio_filename": "CryingForRain.mp3",
+		"motif": "raindrop_scatter",
+	},
+	{
+		"slug": "kyouran-hey-kids",
+		"title": "Kyouran Hey Kids!!",
+		"artist": "THE ORAL CIGARETTES",
+		"audio_filename": "KyouranHeyKids.mp3",
+		"motif": "punk_rush",
+	},
+	{
+		"slug": "new-genesis",
+		"title": "New Genesis",
+		"artist": "Ado",
+		"audio_filename": "NewGenesis.mp3",
+		"motif": "diva_belt",
+	},
 ]
 
 
@@ -131,16 +265,19 @@ func _initialize() -> void:
 		var analysis: Dictionary = AudioAnalysis.analyze(samples, sample_rate)
 		var duration_ms: float = stream.get_length() * 1000.0
 
-		var bpm: float = analysis.bpm if analysis.bpm > 0.0 else 120.0
+		var bpm: float = float(song.get("bpm_override", 0.0))
+		if bpm <= 0.0:
+			bpm = analysis.bpm if analysis.bpm > 0.0 else 120.0
 		var beat_ms: float = 60000.0 / bpm
 		var onsets: Array = analysis.onsets
 		if onsets.is_empty():
 			onsets = _synthetic_grid(beat_ms, duration_ms)
 
-		print("generate_charts: %s -> bpm=%.2f offset=%.1fms onsets=%d duration=%.0fms" % [
-			song.slug, bpm, analysis.offset_ms, onsets.size(), duration_ms])
+		print("generate_charts: %s -> bpm=%.2f (detected %.2f) offset=%.1fms onsets=%d duration=%.0fms" % [
+			song.slug, bpm, analysis.bpm, analysis.offset_ms, onsets.size(), duration_ms])
 
-		for diff: Dictionary in song.difficulties:
+		var difficulties: Array = song.get("difficulties", ALL_DIFFICULTIES)
+		for diff: Dictionary in difficulties:
 			var chart: Chart = _build_chart(song, diff, bpm, analysis.offset_ms, onsets, duration_ms)
 			var out_path: String = "res://songs/%s/%s.oct" % [song.slug, diff.file]
 			var err: Error = OctIO.save_oct(chart, out_path)
@@ -170,9 +307,21 @@ func _build_chart(song: Dictionary, diff: Dictionary, bpm: float, offset_ms: flo
 	rng.seed = hash("%s::%s" % [song.slug, tier])
 	var beat_ms: float = 60000.0 / bpm
 
+	var base_style: String = song.get("base_style", "random_walk")
 	var stride: int = STRIDE_BY_TIER.get(tier, 2)
+	if base_style == "sparse":
+		stride *= 2
 	var thinned: Array = _thin_onsets(onsets, stride)
-	var notes: Array[ChartNote] = _assign_base_lanes(rng, thinned)
+	if base_style == "offbeat":
+		var shifted: Array = []
+		for onset_time: float in thinned:
+			shifted.append(onset_time + beat_ms * 0.5)
+		thinned = shifted
+	var notes: Array[ChartNote] = []
+	if base_style == "adjacent_walk":
+		notes = _assign_adjacent_walk(rng, thinned)
+	else:
+		notes = _assign_base_lanes(rng, thinned)
 
 	var motif_count: int = MOTIF_COUNT_BY_TIER.get(tier, 2)
 	var anchors: Array = _pick_motif_anchors(onsets, duration_ms, motif_count, beat_ms * 4.0)
@@ -203,7 +352,10 @@ func _build_chart(song: Dictionary, diff: Dictionary, bpm: float, offset_ms: flo
 	chart.metadata.mapper = "Octet Team"
 	chart.metadata.difficulty_name = diff.name
 	chart.metadata.star_rating = STAR_RATING_BY_TIER.get(tier, 3.0)
-	chart.metadata.tags = PackedStringArray(["auto-generated", "signature:%s" % song.motif])
+	var tags: Array[String] = ["auto-generated", "signature:%s" % song.motif]
+	if not song.motif in ["arpeggio_sweep", "long_holds", "held_chords", "mirror_spam", "wave_trill"]:
+		tags.append("anime")
+	chart.metadata.tags = PackedStringArray(tags)
 	chart.metadata.preview_time_ms = preview_time_ms
 
 	chart.audio = ChartAudio.new()
@@ -248,6 +400,26 @@ func _assign_base_lanes(rng: RandomNumberGenerator, times: Array) -> Array[Chart
 		note.type = "tap"
 		notes.append(note)
 		last_lane = lane
+	return notes
+
+
+## adjacent_walk base style: the lane steps +/-1 per note, bouncing at the
+## edges, so the base rhythm itself reads as a flowing stream (Silhouette).
+func _assign_adjacent_walk(rng: RandomNumberGenerator, times: Array) -> Array[ChartNote]:
+	var notes: Array[ChartNote] = []
+	var lane: int = rng.randi_range(2, 5)
+	var dir: int = 1 if rng.randf() < 0.5 else -1
+	for t: float in times:
+		var note := ChartNote.new()
+		note.lane = lane
+		note.time_ms = int(round(t))
+		note.type = "tap"
+		notes.append(note)
+		lane += dir
+		if lane <= 0 or lane >= 7:
+			dir = -dir
+		if rng.randf() < 0.15:
+			dir = -dir
 	return notes
 
 
@@ -311,7 +483,7 @@ func _apply_motif(motif_name: String, tier: String, rng: RandomNumberGenerator, 
 		"wave_trill":
 			return _motif_wave_trill(tier, anchor_ms, beat_ms, occurrence_index)
 		_:
-			return {"notes": [] as Array[ChartNote], "span_ms": 0.0}
+			return ChartMotifs.build(motif_name, tier, rng, anchor_ms, beat_ms, occurrence_index)
 
 
 ## Unravel: a rapid full-lane (or partial, on lower tiers) cascade sweep

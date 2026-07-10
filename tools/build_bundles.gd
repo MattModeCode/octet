@@ -12,6 +12,10 @@ extends SceneTree
 ## Safe to re-run (overwrites the .octet files) or delete once the bundles
 ## are committed -- it's not wired into any autoload or registered test.
 
+const ALL_TIER_FILES: Array = [
+	"very_easy.oct", "easy.oct", "normal.oct", "hard.oct", "very_hard.oct",
+]
+
 const SONGS: Array[Dictionary] = [
 	{
 		"slug": "thats-why-i-gave-up-on-music",
@@ -43,6 +47,22 @@ const SONGS: Array[Dictionary] = [
 		"audio_filename": "ChasingKou.mp3",
 		"difficulty_files": ["easy.oct", "very_hard.oct"],
 	},
+	## -- anime OP/ED batch: all five tiers each.
+	{"slug": "idol", "audio_filename": "Idol.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "yuusha", "audio_filename": "Yuusha.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "kaibutsu", "audio_filename": "Kaibutsu.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "kickback", "audio_filename": "KickBack.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "peace-sign", "audio_filename": "PeaceSign.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "crossing-field", "audio_filename": "CrossingField.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "unlasting", "audio_filename": "Unlasting.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "zankyosanka", "audio_filename": "Zankyosanka.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "specialz", "audio_filename": "Specialz.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "kaikai-kitan", "audio_filename": "KaikaiKitan.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "inferno", "audio_filename": "Inferno.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "silhouette", "audio_filename": "Silhouette.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "crying-for-rain", "audio_filename": "CryingForRain.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "kyouran-hey-kids", "audio_filename": "KyouranHeyKids.mp3", "difficulty_files": ALL_TIER_FILES},
+	{"slug": "new-genesis", "audio_filename": "NewGenesis.mp3", "difficulty_files": ALL_TIER_FILES},
 ]
 
 
