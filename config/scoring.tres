@@ -4,7 +4,13 @@
 
 [resource]
 script = ExtResource("1_scrcfg")
-base_note_score = 300
+base_note_score = 100
+mod_double_speed_mult = 2.0
+mod_half_speed_mult = 0.5
+mod_easy_mult = 0.7
+mod_no_fail_mult = 0.8
+mod_sudden_death_mult = 1.2
+mod_autoplay_mult = 0.0
 star_density_weight = 1.0
 star_chord_hold_complexity_weight = 1.0
 star_pattern_speed_weight = 1.0

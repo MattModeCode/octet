@@ -1,0 +1,181 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://game/tutorial.gd" id="1_tutorialgd"]
+[ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://game/playfield_view.gd" id="3_playfieldviewgd"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_display.tres" id="4_fontdisplay"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_ui.tres" id="5_fontui"]
+[ext_resource type="FontVariation" path="res://assets/fonts/font_mono.tres" id="6_fontmono"]
+[ext_resource type="PackedScene" path="res://ui/radial_background.tscn" id="7_radialbg"]
+
+; -----------------------------------------------------------------------
+; Lockstep tutorial trainer scene. Net-new UI with no Claude Design MCP
+; mockup (flagged deviation, see game/tutorial.gd's header and the plan
+; this was built from) -- laid out with the same 1920x1080 design-canvas
+; coordinates and literal DesignTokens colour values every other .tscn in
+; this project already uses (Resource files parse before autoloads exist,
+; so DesignTokens itself can't be referenced here -- same documented
+; exception as game/gameplay.tscn):
+;   COLOR_INK             #0C0A0F -> Color(0.047059, 0.039216, 0.058824, 1)
+;   COLOR_SURFACE_RAISED  #1F1A26 -> Color(0.121569, 0.101961, 0.14902, 1)
+;   COLOR_TEXT_PRIMARY    #F5F1F5 -> Color(0.960784, 0.945098, 0.960784, 1)
+;   COLOR_TEXT_SECONDARY  #A79FAE -> Color(0.654902, 0.623529, 0.682353, 1)
+;   COLOR_TEXT_MUTED      #6E6676 -> Color(0.431373, 0.4, 0.462745, 1)
+;   COLOR_PINK            #FF2D6E -> Color(1, 0.176471, 0.431373, 1)
+; PlayfieldView keeps gameplay.tscn's exact 640x910 rect (offset 640,170 to
+; 1280,1080) so the trainer's falling notes look identical to real gameplay.
+; -----------------------------------------------------------------------
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.121569, 0.101961, 0.14902, 1)
+border_width_left = 3
+border_color = Color(1, 0.176471, 0.431373, 1)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_right = 11
+corner_radius_bottom_left = 11
+content_margin_left = 24.0
+content_margin_top = 18.0
+content_margin_right = 24.0
+content_margin_bottom = 18.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_done_panel"]
+bg_color = Color(0.121569, 0.101961, 0.14902, 1)
+corner_radius_top_left = 11
+corner_radius_top_right = 11
+corner_radius_bottom_right = 11
+corner_radius_bottom_left = 11
+content_margin_left = 40.0
+content_margin_top = 32.0
+content_margin_right = 40.0
+content_margin_bottom = 32.0
+
+[node name="Tutorial" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_tutorialgd")
+
+[node name="RadialBackground" parent="." instance=ExtResource("7_radialbg")]
+layout_mode = 1
+glow_center = Vector2(0.5, 0.0)
+glow_extent = Vector2(0.6, 0.55)
+vignette_center = Vector2(0.5, 1.0)
+vignette_extent = Vector2(0.4, 0.6)
+
+[node name="InstructionCard" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 640.0
+offset_top = 40.0
+offset_right = 1280.0
+offset_bottom = 172.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="InstructionVBox" type="VBoxContainer" parent="InstructionCard"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="TitleLabel" type="Label" parent="InstructionCard/InstructionVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 19
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "Lane 3 -- press F"
+
+[node name="BodyLabel" type="RichTextLabel" parent="InstructionCard/InstructionVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+bbcode_enabled = true
+scroll_active = false
+theme_override_fonts/normal_font = ExtResource("5_fontui")
+theme_override_font_sizes/normal_font_size = 14
+theme_override_colors/default_color = Color(0.654902, 0.623529, 0.682353, 1)
+text = "F is your left index finger."
+
+[node name="FooterRow" type="HBoxContainer" parent="InstructionCard/InstructionVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ProgressLabel" type="Label" parent="InstructionCard/InstructionVBox/FooterRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+vertical_alignment = 1
+theme_override_fonts/font = ExtResource("6_fontmono")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.431373, 0.4, 0.462745, 1)
+text = "1 / 10"
+
+[node name="SkipButton" type="Button" parent="InstructionCard/InstructionVBox/FooterRow"]
+unique_name_in_owner = true
+layout_mode = 2
+flat = true
+text = "Skip tutorial"
+
+[node name="PlayfieldView" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 640.0
+offset_top = 170.0
+offset_right = 1280.0
+offset_bottom = 1080.0
+script = ExtResource("3_playfieldviewgd")
+
+[node name="DoneOverlay" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.047059, 0.039216, 0.058824, 0.85)
+mouse_filter = 0
+
+[node name="DonePanel" type="PanelContainer" parent="DoneOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -110.0
+offset_right = 220.0
+offset_bottom = 110.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_done_panel")
+
+[node name="DoneVBox" type="VBoxContainer" parent="DoneOverlay/DonePanel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="DoneTitleLabel" type="Label" parent="DoneOverlay/DonePanel/DoneVBox"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("4_fontdisplay")
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.960784, 0.945098, 0.960784, 1)
+text = "You're ready!"
+
+[node name="DoneBodyLabel" type="Label" parent="DoneOverlay/DonePanel/DoneVBox"]
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
+theme_override_fonts/font = ExtResource("5_fontui")
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.654902, 0.623529, 0.682353, 1)
+text = "Head back to Song Select and grab some maps from Browse Maps."
+
+[node name="DoneButton" type="Button" parent="DoneOverlay/DonePanel/DoneVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Back to Song Select"

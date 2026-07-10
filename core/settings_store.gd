@@ -87,3 +87,21 @@ func _apply_bus_volume(bus_name: String, linear: float) -> void:
 	AudioServer.set_bus_mute(bus_index, linear <= 0.0)
 	if linear > 0.0:
 		AudioServer.set_bus_volume_db(bus_index, linear_to_db(linear))
+
+
+## True if the player has already dismissed/completed the coach-mark
+## sequence identified by [param coach_id] (e.g. "main_intro") -- the
+## onboarding gate every first-visit screen checks before showing its
+## overlay.
+func has_seen_coach(coach_id: String) -> bool:
+	return coach_id in settings.seen_coach_marks
+
+
+## Records that [param coach_id] has been seen (shown to completion or
+## explicitly skipped) and persists it immediately, so it never reappears on
+## a later launch. No-op if already recorded.
+func mark_coach_seen(coach_id: String) -> void:
+	if has_seen_coach(coach_id):
+		return
+	settings.seen_coach_marks.append(coach_id)
+	save()

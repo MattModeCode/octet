@@ -28,11 +28,17 @@ extends Resource
 ## game/gameplay.gd's _on_song_failed().
 @export var fail_exit_delay_sec: float = 1.0
 
-## -- Combo (§2.5). Multiplier = 1 + floor(combo / combo_multiplier_step),
-## capped at combo_multiplier_cap (e.g. x4). Scales score only, never
-## accuracy.
-@export var combo_multiplier_cap: float = 4.0
-@export var combo_multiplier_step: int = 10
+## Standardized "get ready" runway before any notes fall or audio plays,
+## milliseconds, applied uniformly to every song via
+## Conductor.play(stream, 0.0, lead_in_ms) in game/gameplay.gd's _ready().
+@export var lead_in_ms: float = 2000.0
+
+## -- Combo (§2.5). Multiplier = max(1, combo) -- linear and uncapped, so a
+## 100-combo hit scores 100x its base value. Scales score only, never
+## accuracy. Replaces the earlier stepped/capped ladder (was 1 + floor(combo
+## / step), capped at 4x) per the points-revamp: points should scale
+## directly with combo rather than plateauing.
+
 
 ## -- Hold ticks (§2.2/§2.4). Interval between per-tick credit awards while
 ## a hold is held between its head and tail.

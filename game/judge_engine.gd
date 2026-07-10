@@ -70,12 +70,17 @@ var hit_errors: Array[float] = []
 var judgment_counts: Dictionary = {}
 
 var _failed: bool = false
+## Run-wide modifier score multiplier (GameplayMods.score_multiplier),
+## computed once here rather than every judgment -- mods don't change
+## mid-run.
+var _mod_score_mult: float = 1.0
 
 
 func _init(chart: Chart, gameplay: GameplayConfig, scoring: ScoringConfig, mods: GameplayMods = null) -> void:
 	_gameplay = gameplay
 	_scoring = scoring
 	_mods = mods if mods != null else GameplayMods.new()
+	_mod_score_mult = _mods.score_multiplier(_scoring)
 	health = gameplay.health_start
 
 	var sorted_notes: Array[ChartNote] = chart.notes.duplicate()
@@ -203,9 +208,10 @@ func is_ranked() -> bool:
 	return _mods.is_ranked()
 
 
+## Linear, uncapped combo multiplier -- multiplier == combo (floored at 1x
+## for combo 0), so a 100-combo hit scores 100x its base value.
 func current_multiplier() -> float:
-	var steps := floorf(float(combo) / float(_gameplay.combo_multiplier_step))
-	return clampf(1.0 + steps, 1.0, _gameplay.combo_multiplier_cap)
+	return maxf(1.0, float(combo))
 
 
 # ---------------------------------------------------------------------------
@@ -263,13 +269,16 @@ func _find_held(lane: int) -> NoteRuntime:
 ## that have no real tap to measure an error from. [param affects_combo]
 ## and [param affects_health] are false for hold-tick credit/truncation,
 ## which contribute to accuracy/score only (see class doc comment).
+##
+## Combo is updated *before* score is computed so a discrete hit scores at
+## its own post-increment combo -- e.g. the hit that takes combo 99 -> 100
+## scores at the new 100x multiplier, matching "combo 100 = 100x points."
+## Hold ticks/truncated entries (affects_combo=false) score at whatever
+## combo already stands, since they don't move it.
 func _apply_judgment(lane: int, kind: Judgment.Kind, signed_error_ms, affects_combo: bool = true, affects_health: bool = true) -> void:
 	judgment_counts[kind] = int(judgment_counts.get(kind, 0)) + 1
 	if signed_error_ms != null:
 		hit_errors.append(signed_error_ms)
-
-	var multiplier := current_multiplier()
-	score += int(round(_scoring.base_note_score * Judgment.weight(kind, _gameplay) * multiplier))
 
 	if affects_combo:
 		if kind == Judgment.Kind.MISS:
@@ -285,6 +294,9 @@ func _apply_judgment(lane: int, kind: Judgment.Kind, signed_error_ms, affects_co
 			combo += 1
 			max_combo = maxi(max_combo, combo)
 		combo_changed.emit(combo)
+
+	var multiplier := current_multiplier()
+	score += int(round(_scoring.base_note_score * Judgment.weight(kind, _gameplay) * multiplier * _mod_score_mult))
 
 	if affects_health:
 		health = clampf(health + Judgment.health_delta(kind, _gameplay), 0.0, _gameplay.health_start)

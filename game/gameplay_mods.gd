@@ -44,3 +44,28 @@ func _init(p_no_fail: bool = false, p_practice: bool = false, p_rate: float = RA
 func is_ranked() -> bool:
 	return (not no_fail and not practice and not sudden_death and not autoplay
 		and is_equal_approx(rate, RATE_NORMAL) and is_equal_approx(window_scale, 1.0))
+
+
+## Points-revamp: the run-wide score multiplier from active mods, stacked
+## multiplicatively against each other and against JudgeEngine's per-hit
+## combo multiplier. Harder mods (Double speed, Sudden Death) score more;
+## easier ones (Half speed, Easy, No-Fail) score less; Autopilot scores
+## nothing since the run isn't actually played. Vanilla mods return 1.0
+## (identity), so an unmodified run's scoring is unaffected. The per-mod
+## values live in ScoringConfig (config/scoring.tres) so they're tunable
+## from playtesting rather than hard-coded here.
+func score_multiplier(scoring: ScoringConfig) -> float:
+	var multiplier := 1.0
+	if is_equal_approx(rate, RATE_DOUBLE):
+		multiplier *= scoring.mod_double_speed_mult
+	elif is_equal_approx(rate, RATE_HALF):
+		multiplier *= scoring.mod_half_speed_mult
+	if not is_equal_approx(window_scale, 1.0):
+		multiplier *= scoring.mod_easy_mult
+	if no_fail:
+		multiplier *= scoring.mod_no_fail_mult
+	if sudden_death:
+		multiplier *= scoring.mod_sudden_death_mult
+	if autoplay:
+		multiplier *= scoring.mod_autoplay_mult
+	return multiplier

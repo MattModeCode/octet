@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://game/gameplay.gd" id="1_gameplaygd"]
 [ext_resource type="Theme" path="res://assets/theme/octet_theme.tres" id="2_theme"]
@@ -10,6 +10,8 @@
 [ext_resource type="FontVariation" path="res://assets/fonts/font_mono_overline.tres" id="8_fontmonooverline"]
 [ext_resource type="FontVariation" path="res://assets/fonts/font_mono_pill.tres" id="9_fontmonopill"]
 [ext_resource type="FontVariation" path="res://assets/fonts/font_ui_medium.tres" id="10_fontuimedium"]
+[ext_resource type="PackedScene" path="res://ui/components/health_bar.tscn" id="11_healthbar"]
+[ext_resource type="PackedScene" path="res://ui/components/song_progress_pie.tscn" id="12_songpie"]
 
 ; -----------------------------------------------------------------------
 ; 1a "Classic centered" gameplay HUD, imported from
@@ -32,10 +34,15 @@
 ; Fidelity-pass note (CLAUDE.md design-fidelity rule): the background radial
 ; glow + breathing vignette and the health bar's rounded pink->amber
 ; gradient fill were previously cut as "decorative" -- both restored here.
-; Known remaining deviation: the health fill has no box-shadow glow (no
-; cheap Godot Control equivalent at this 8px scale) and its square-cornered
-; TextureRect can show a hairline-scale sliver past the track's rounded
-; end-caps (Godot StyleBoxFlat corner rounding isn't a true clip mask).
+; Points-revamp update: the health bar now instances
+; ui/components/health_bar.tscn (a custom-drawn capsule) instead of a raw
+; TextureRect fill, fixing the hairline-sliver corner-clipping deviation
+; noted here previously -- see that component's own header comment. A new
+; small pie chart (ui/components/song_progress_pie.tscn) was added under
+; the COMBO value showing time remaining in the song; it has no mockup
+; precedent (re-checked against the Design MCP project before adding) and
+; is styled fresh from the DESIGN_BRIEF token palette to match this HUD's
+; existing look.
 ; -----------------------------------------------------------------------
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pill"]
@@ -53,31 +60,6 @@ content_margin_left = 8.0
 content_margin_top = 2.0
 content_margin_right = 8.0
 content_margin_bottom = 2.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_track"]
-bg_color = Color(0.164706, 0.141176, 0.192157, 1)
-corner_radius_top_left = 20
-corner_radius_top_right = 20
-corner_radius_bottom_right = 20
-corner_radius_bottom_left = 20
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_bg"]
-bg_color = Color(0.121569, 0.101961, 0.14902, 1)
-corner_radius_top_left = 20
-corner_radius_top_right = 20
-corner_radius_bottom_right = 20
-corner_radius_bottom_left = 20
-
-[sub_resource type="Gradient" id="Gradient_health_fill"]
-offsets = PackedFloat32Array(0, 1)
-colors = PackedColorArray(1, 0.176471, 0.431373, 1, 1, 0.788235, 0.235294, 1)
-
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_health_fill"]
-gradient = SubResource("Gradient_health_fill")
-width = 640
-height = 8
-fill_from = Vector2(0, 0.5)
-fill_to = Vector2(1, 0.5)
 
 [node name="Gameplay" type="Control"]
 layout_mode = 3
@@ -246,29 +228,21 @@ theme_override_constants/shadow_offset_x = 0
 theme_override_constants/shadow_offset_y = 0
 text = "0x"
 
-[node name="HealthBarTrack" type="Panel" parent="."]
+[node name="SongProgressRow" type="HBoxContainer" parent="AccComboBlock"]
+layout_mode = 2
+alignment = 2
+
+[node name="SongProgressPie" parent="AccComboBlock/SongProgressRow" instance=ExtResource("12_songpie")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HealthBar" parent="." instance=ExtResource("11_healthbar")]
+unique_name_in_owner = true
 layout_mode = 0
 offset_left = 640.0
 offset_top = 132.0
 offset_right = 1280.0
 offset_bottom = 142.0
-theme_override_styles/panel = SubResource("StyleBoxFlat_health_track")
-
-[node name="HealthBarBackground" type="Panel" parent="HealthBarTrack"]
-layout_mode = 0
-offset_left = 1.0
-offset_top = 1.0
-offset_right = 639.0
-offset_bottom = 9.0
-clip_contents = true
-theme_override_styles/panel = SubResource("StyleBoxFlat_health_bg")
-
-[node name="HealthBarFill" type="TextureRect" parent="HealthBarTrack/HealthBarBackground"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_right = 638.0
-offset_bottom = 8.0
-texture = SubResource("GradientTexture2D_health_fill")
 
 [node name="PlayfieldView" type="Control" parent="."]
 unique_name_in_owner = true

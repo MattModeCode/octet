@@ -1,0 +1,38 @@
+{
+  "audio": {
+    "duration_ms": 0,
+    "filename": ""
+  },
+  "format_version": 1,
+  "metadata": {
+    "artist": "Octet",
+    "difficulty_name": "Tutorial",
+    "mapper": "Octet",
+    "preview_time_ms": 0,
+    "star_rating": 0.5,
+    "tags": [
+      "tutorial"
+    ],
+    "title": "Tutorial"
+  },
+  "timing_points": [
+    {
+      "time_ms": 0,
+      "bpm": 90,
+      "meter": 4
+    }
+  ],
+  "notes": [
+    { "lane": 3, "time_ms": 2000, "type": "tap" },
+    { "lane": 4, "time_ms": 4000, "type": "tap" },
+    { "lane": 3, "time_ms": 6000, "type": "tap" },
+    { "lane": 4, "time_ms": 7000, "type": "tap" },
+    { "lane": 0, "time_ms": 9000, "type": "tap" },
+    { "lane": 7, "time_ms": 10500, "type": "tap" },
+    { "lane": 1, "time_ms": 12500, "type": "tap" },
+    { "lane": 6, "time_ms": 13500, "type": "tap" },
+    { "lane": 3, "time_ms": 15500, "type": "tap" },
+    { "lane": 4, "time_ms": 15500, "type": "tap" },
+    { "lane": 5, "time_ms": 18000, "type": "hold", "end_time_ms": 19800 }
+  ]
+}

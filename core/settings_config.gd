@@ -41,3 +41,9 @@ extends Resource
 @export var master_volume: float = 0.8
 @export var music_volume: float = 0.8
 @export var sfx_volume: float = 0.8
+
+## -- First-run coach-marks (onboarding). Each entry is an opaque id (e.g.
+## "main_intro", "songselect_intro") for a coach-mark sequence the player has
+## already seen -- checked/appended via SettingsStore.has_seen_coach()/
+## mark_coach_seen() so a screen's onboarding overlay only ever shows once.
+@export var seen_coach_marks: Array[String] = []

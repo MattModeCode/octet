@@ -4,104 +4,668 @@
       "id": "thats-why-i-gave-up-on-music",
       "title": "That's Why I Gave Up On Music",
       "artist": "Yorushika",
-      "mapper": "Auto (WP-C onset pipeline)",
+      "mapper": "Octet Team",
       "bpm": 126,
       "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/thats-why-i-gave-up-on-music.octet",
       "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/thats-why-i-gave-up-on-music/cover.jpg",
       "difficulties": [
-        {"name": "Easy", "star_rating": 1.8},
-        {"name": "Normal", "star_rating": 3.2},
-        {"name": "Hard", "star_rating": 4.7}
+        {
+          "name": "Easy",
+          "star_rating": 1.8
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.2
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.7
+        }
       ],
       "download_count": 0,
       "play_count": 0,
-      "rating": 0.0,
+      "rating": 0,
       "updated_at": "2026-07-03"
     },
     {
       "id": "unravel-tokyo-ghoul",
       "title": "Unravel",
       "artist": "TK from Ling tosite sigure",
-      "mapper": "Auto (Octet pattern generator)",
+      "mapper": "Octet Team",
       "bpm": 133,
       "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/unravel-tokyo-ghoul.octet",
       "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/unravel-tokyo-ghoul/cover.jpg",
       "difficulties": [
-        {"name": "Normal", "star_rating": 3.4},
-        {"name": "Very Hard", "star_rating": 6.2}
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
       ],
       "download_count": 0,
       "play_count": 0,
-      "rating": 0.0,
+      "rating": 0,
       "updated_at": "2026-07-07"
     },
     {
       "id": "one-voice",
       "title": "One Voice",
       "artist": "Rokudenashi",
-      "mapper": "Auto (Octet pattern generator)",
+      "mapper": "Octet Team",
       "bpm": 129,
       "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/one-voice.octet",
       "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/one-voice/cover.jpg",
       "difficulties": [
-        {"name": "Easy", "star_rating": 2.2},
-        {"name": "Hard", "star_rating": 4.8}
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        }
       ],
       "download_count": 0,
       "play_count": 0,
-      "rating": 0.0,
+      "rating": 0,
       "updated_at": "2026-07-07"
     },
     {
       "id": "a-thousand-years",
       "title": "A Thousand Years",
       "artist": "John Michael Howell, JVKE & ZVC",
-      "mapper": "Auto (Octet pattern generator)",
+      "mapper": "Octet Team",
       "bpm": 115,
       "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/a-thousand-years.octet",
       "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/a-thousand-years/cover.jpg",
       "difficulties": [
-        {"name": "Very Easy", "star_rating": 1.0},
-        {"name": "Normal", "star_rating": 3.4}
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        }
       ],
       "download_count": 0,
       "play_count": 0,
-      "rating": 0.0,
+      "rating": 0,
       "updated_at": "2026-07-07"
     },
     {
       "id": "story-of-a-warrior",
       "title": "Story Of A Warrior",
       "artist": "John Michael Howell",
-      "mapper": "Auto (Octet pattern generator)",
+      "mapper": "Octet Team",
       "bpm": 103,
       "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/story-of-a-warrior.octet",
       "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/story-of-a-warrior/cover.jpg",
       "difficulties": [
-        {"name": "Normal", "star_rating": 3.4},
-        {"name": "Hard", "star_rating": 4.8}
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        }
       ],
       "download_count": 0,
       "play_count": 0,
-      "rating": 0.0,
+      "rating": 0,
       "updated_at": "2026-07-07"
     },
     {
       "id": "drowning-love",
       "title": "Chasing Kou",
       "artist": "Shuichi Sakamoto",
-      "mapper": "Auto (Octet pattern generator)",
+      "mapper": "Octet Team",
       "bpm": 162,
       "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/drowning-love.octet",
       "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/drowning-love/cover.jpg",
       "difficulties": [
-        {"name": "Easy", "star_rating": 2.2},
-        {"name": "Very Hard", "star_rating": 6.2}
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
       ],
       "download_count": 0,
       "play_count": 0,
-      "rating": 0.0,
+      "rating": 0,
       "updated_at": "2026-07-07"
+    },
+    {
+      "id": "idol",
+      "title": "Idol",
+      "artist": "YOASOBI",
+      "mapper": "Octet Team",
+      "bpm": 167,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/idol.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/idol/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "yuusha",
+      "title": "Yuusha",
+      "artist": "YOASOBI",
+      "mapper": "Octet Team",
+      "bpm": 103,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/yuusha.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/yuusha/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "kaibutsu",
+      "title": "Kaibutsu",
+      "artist": "YOASOBI",
+      "mapper": "Octet Team",
+      "bpm": 172,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/kaibutsu.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/kaibutsu/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "kickback",
+      "title": "KICK BACK",
+      "artist": "Kenshi Yonezu",
+      "mapper": "Octet Team",
+      "bpm": 103,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/kickback.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/kickback/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "peace-sign",
+      "title": "Peace Sign",
+      "artist": "Kenshi Yonezu",
+      "mapper": "Octet Team",
+      "bpm": 200,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/peace-sign.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/peace-sign/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "crossing-field",
+      "title": "Crossing Field",
+      "artist": "LiSA",
+      "mapper": "Octet Team",
+      "bpm": 178,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/crossing-field.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/crossing-field/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "unlasting",
+      "title": "Unlasting",
+      "artist": "LiSA",
+      "mapper": "Octet Team",
+      "bpm": 119,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/unlasting.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/unlasting/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "zankyosanka",
+      "title": "Zankyosanka",
+      "artist": "Aimer",
+      "mapper": "Octet Team",
+      "bpm": 172,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/zankyosanka.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/zankyosanka/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "specialz",
+      "title": "SPECIALZ",
+      "artist": "King Gnu",
+      "mapper": "Octet Team",
+      "bpm": 117,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/specialz.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/specialz/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "kaikai-kitan",
+      "title": "Kaikai Kitan",
+      "artist": "Eve",
+      "mapper": "Octet Team",
+      "bpm": 92,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/kaikai-kitan.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/kaikai-kitan/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "inferno",
+      "title": "Inferno",
+      "artist": "Mrs. GREEN APPLE",
+      "mapper": "Octet Team",
+      "bpm": 92,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/inferno.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/inferno/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "silhouette",
+      "title": "Silhouette",
+      "artist": "KANA-BOON",
+      "mapper": "Octet Team",
+      "bpm": 92,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/silhouette.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/silhouette/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "crying-for-rain",
+      "title": "Kawaki wo Ameku",
+      "artist": "Minami",
+      "mapper": "Octet Team",
+      "bpm": 129,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/crying-for-rain.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/crying-for-rain/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "kyouran-hey-kids",
+      "title": "Kyouran Hey Kids!!",
+      "artist": "THE ORAL CIGARETTES",
+      "mapper": "Octet Team",
+      "bpm": 144,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/kyouran-hey-kids.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/kyouran-hey-kids/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
+    },
+    {
+      "id": "new-genesis",
+      "title": "New Genesis",
+      "artist": "Ado",
+      "mapper": "Octet Team",
+      "bpm": 172,
+      "bundle_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/maps/new-genesis.octet",
+      "cover_url": "https://raw.githubusercontent.com/MattModeCode/octet/master/songs/new-genesis/cover.jpg",
+      "difficulties": [
+        {
+          "name": "Very Easy",
+          "star_rating": 1
+        },
+        {
+          "name": "Easy",
+          "star_rating": 2.2
+        },
+        {
+          "name": "Normal",
+          "star_rating": 3.4
+        },
+        {
+          "name": "Hard",
+          "star_rating": 4.8
+        },
+        {
+          "name": "Very Hard",
+          "star_rating": 6.2
+        }
+      ],
+      "download_count": 0,
+      "play_count": 0,
+      "rating": 0,
+      "updated_at": "2026-07-10"
     }
   ]
 }

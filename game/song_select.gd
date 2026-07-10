@@ -21,7 +21,17 @@ extends Control
 ## real audio via a plain AudioStreamPlayer.
 
 const GAMEPLAY_SCENE: String = "res://game/gameplay.tscn"
+const TUTORIAL_SCENE: String = "res://game/tutorial.tscn"
 const MODIFIERS_SCENE: String = "res://ui/modifiers.tscn"
+
+## Chart tag (core/chart_note.gd's metadata.tags) that routes Play to the
+## lockstep trainer (game/tutorial.gd) instead of normal gameplay -- only
+## tutorial/tutorial.oct carries this tag.
+const TUTORIAL_TAG: String = "tutorial"
+
+## First-visit onboarding id (core/settings_store.gd), shown once to point a
+## newcomer at the built-in Tutorial row and the Play button.
+const COACH_ID: String = "songselect_intro"
 
 ## Loops the selected song's preview back to preview_time_ms after this many
 ## seconds of playback, so the preview stays a short snippet rather than
@@ -126,6 +136,10 @@ func _ready() -> void:
 	_modifiers_button.pressed.connect(_on_modifiers_pressed)
 
 	_update_detail_panel()
+	# Deferred so the row panels this step spotlights have already gone
+	# through a layout pass (their get_global_rect() would be zero-sized on
+	# the very first frame otherwise).
+	_maybe_show_coach_marks.call_deferred()
 
 
 func _ensure_user_songs_dir() -> void:
@@ -216,12 +230,24 @@ func _build_stripe_texture() -> ImageTexture:
 ## per-difficulty), or null if it has none / the image failed to load.
 ## Callers fall back to _stripe_texture, same contract as
 ## SongLibrary.resolve_cover_path() itself.
+##
+## Tries every difficulty's folder, not just the first -- _group_songs()
+## merges same-song entries from res://songs and user://songs (a locally
+## downloaded copy, which net_client.gd's unpack_bundle_bytes() never writes
+## a cover.jpg into, since .octet bundles carry no cover art) under one
+## title+artist key, then sorts difficulties by star rating. Resolving from
+## diffs[0] alone meant a bundled song with a real cover.jpg could still show
+## the placeholder whenever a cover-less downloaded duplicate happened to
+## sort first.
 func _get_song_cover_texture(song: Dictionary) -> Texture2D:
 	var diffs: Array = song.difficulties
 	if diffs.is_empty():
 		return null
-	var chart_path: String = String(diffs[0].path)
-	var cover_path := SongLibrary.resolve_cover_path(chart_path)
+	var cover_path := ""
+	for diff in diffs:
+		cover_path = SongLibrary.resolve_cover_path(String(diff.path))
+		if not cover_path.is_empty():
+			break
 	if cover_path.is_empty():
 		return null
 
@@ -763,7 +789,8 @@ func _on_play_pressed() -> void:
 	for entry in _entries:
 		paths.append(entry.path)
 
-	var selected_path: String = _songs[_selected_song_index].difficulties[_selected_difficulty_index].path
+	var selected_diff: Dictionary = _songs[_selected_song_index].difficulties[_selected_difficulty_index]
+	var selected_path: String = selected_diff.path
 	var play_index := paths.find(selected_path)
 
 	PlaySession.chart_list = paths
@@ -780,7 +807,15 @@ func _on_play_pressed() -> void:
 	PlaySession.playtest_origin_scene = ""
 	_stop_preview()
 	Sfx.play_confirm()
-	SceneRouter.goto_scene_pushed(GAMEPLAY_SCENE)
+
+	# The built-in Tutorial chart (tutorial/tutorial.oct, tagged "tutorial")
+	# routes to the lockstep trainer instead of real gameplay -- it has no
+	# JudgeEngine/scoring, so it can't reuse GAMEPLAY_SCENE's path.
+	var selected_chart: Chart = selected_diff.chart
+	if selected_chart.metadata.tags.has(TUTORIAL_TAG):
+		SceneRouter.goto_scene_pushed(TUTORIAL_SCENE)
+	else:
+		SceneRouter.goto_scene_pushed(GAMEPLAY_SCENE)
 
 
 func _on_modifiers_pressed() -> void:
@@ -866,3 +901,50 @@ func _amber_color() -> Color:
 
 func _has_design_tokens() -> bool:
 	return get_tree() != null and get_tree().root.has_node("DesignTokens")
+
+
+## First-visit onboarding (ui/components/coach_mark.gd): points a newcomer at
+## the built-in Tutorial row (if visible) and the Play button. No-op if
+## COACH_ID was already recorded seen (core/settings_store.gd).
+func _maybe_show_coach_marks() -> void:
+	if not _has_autoload("SettingsStore") or SettingsStore.has_seen_coach(COACH_ID):
+		return
+
+	var steps: Array[Dictionary] = []
+	var tutorial_row := _find_tutorial_row_panel()
+	if tutorial_row != null:
+		steps.append({
+			"target": tutorial_row,
+			"title": "Start with the Tutorial",
+			"body": "This built-in song teaches the eight-lane controls -- pick it first.",
+		})
+	steps.append({
+		"target": _play_button,
+		"title": "Pick a difficulty, then Play",
+		"body": "Select a song and difficulty on the left, then press [b]Play[/b] to start.",
+	})
+
+	var coach: Control = preload("res://ui/components/coach_mark.tscn").instantiate()
+	add_child(coach)
+	coach.finished.connect(_on_coach_marks_finished)
+	coach.show_sequence(steps)
+
+
+func _on_coach_marks_finished() -> void:
+	SettingsStore.mark_coach_seen(COACH_ID)
+
+
+## The visible song row panel for the "Tutorial" entry, or null if it isn't
+## currently visible (e.g. filtered out by an active search). _song_row_panels
+## is parallel to _filtered_sorted_songs()'s current result (see
+## _render_rows()), so the two are indexed together here.
+func _find_tutorial_row_panel() -> Control:
+	var visible_songs := _filtered_sorted_songs()
+	for i in visible_songs.size():
+		if String(visible_songs[i].title) == "Tutorial" and i < _song_row_panels.size():
+			return _song_row_panels[i]
+	return null
+
+
+func _has_autoload(autoload_name: String) -> bool:
+	return get_tree() != null and get_tree().root.has_node(autoload_name)

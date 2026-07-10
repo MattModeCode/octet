@@ -28,6 +28,12 @@ extends Control
 ##   (disabled, with a tooltip) — the brief calls for keeping this scoped
 ##   small rather than building a full filter panel this pass.
 
+## First-visit onboarding id (core/settings_store.gd) -- walks a newcomer
+## through search -> pick a map -> download, since this is the only source
+## of new songs on a fresh install (core/song_library.gd's TUTORIAL_DIR is
+## the only other entry until something is downloaded here).
+const COACH_ID: String = "maphub_intro"
+
 const GRID_COLUMNS: int = 5
 const COVER_TILE_SIZE: int = 64
 const CARD_COVER_HEIGHT: int = 150
@@ -136,6 +142,12 @@ func _on_manifest_fetched(maps: Array) -> void:
 	else:
 		_set_view_state(ViewState.GRID)
 		_rebuild_grid()
+		# Deferred so the freshly-built card panels have been through a
+		# layout pass (their get_global_rect() would be zero-sized on the
+		# very first frame). Only ever reached once per fetch, so this
+		# naturally fires once per visit -- has_seen_coach() gates repeats
+		# across visits/launches.
+		_maybe_show_coach_marks.call_deferred()
 
 
 func _on_manifest_fetch_failed(error_message: String) -> void:
@@ -893,3 +905,41 @@ func _mono_font() -> Font:
 
 func _ui_font() -> Font:
 	return load("res://assets/fonts/font_ui.tres")
+
+
+## First-visit onboarding (ui/components/coach_mark.gd): search -> pick a
+## map -> download. The download step has no live target -- Download only
+## exists on the detail view, which isn't open yet from the grid -- so it
+## centers with no spotlight and names the button in its copy instead. No-op
+## if COACH_ID was already recorded seen.
+func _maybe_show_coach_marks() -> void:
+	if not _has_autoload("SettingsStore") or SettingsStore.has_seen_coach(COACH_ID):
+		return
+	if _view_state != ViewState.GRID:
+		return
+
+	var steps: Array[Dictionary] = [{
+		"target": _search_field,
+		"title": "Search the community library",
+		"body": "Type a title, artist, or mapper to find something to play.",
+	}]
+	if not _card_panels.is_empty():
+		steps.append({
+			"target": _card_panels[0],
+			"title": "Pick a map",
+			"body": "Tap a card to open its details.",
+		})
+	steps.append({
+		"target": null,
+		"title": "Download it",
+		"body": "On a map's page, press [b]Download[/b]. It'll show up in your Song Select automatically.",
+	})
+
+	var coach: Control = preload("res://ui/components/coach_mark.tscn").instantiate()
+	add_child(coach)
+	coach.finished.connect(func() -> void: SettingsStore.mark_coach_seen(COACH_ID))
+	coach.show_sequence(steps)
+
+
+func _has_autoload(autoload_name: String) -> bool:
+	return get_tree() != null and get_tree().root.has_node(autoload_name)

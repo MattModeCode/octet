@@ -22,12 +22,6 @@ const GAMEPLAY_SCENE: String = "res://game/gameplay.tscn"
 
 const LANE_COUNT: int = 8
 
-## Health bar fill's max width in pixels -- the track is 640 wide, inset by
-## 1px on each side in the .tscn (HealthBarTrack -> HealthBarBackground),
-## so the fillable interior is 638px. Kept in sync with gameplay.tscn by
-## hand, same convention as PlayfieldView's mockup-derived constants.
-const HEALTH_FILL_MAX_WIDTH: float = 638.0
-
 ## Extra beats of metronome padding past the chart's last note, so the
 ## click track never cuts out mid-song.
 const AUDIO_TAIL_BEATS: int = 4
@@ -39,7 +33,8 @@ const AUDIO_BEATS_PER_BAR: int = 4
 @onready var _score_value_label: Label = %ScoreValueLabel
 @onready var _accuracy_value_label: Label = %AccuracyValueLabel
 @onready var _combo_value_label: Label = %ComboValueLabel
-@onready var _health_fill: TextureRect = %HealthBarFill
+@onready var _health_bar: Control = %HealthBar
+@onready var _song_progress_pie: Control = %SongProgressPie
 @onready var _playfield: Control = %PlayfieldView
 @onready var _reduced_flash_label: Label = %ReducedFlashLabel
 @onready var _autopilot_badge: Control = %AutopilotBadge
@@ -111,13 +106,23 @@ func _ready() -> void:
 	_playfield.set_chart(_chart.notes, _gameplay.window_good_ms)
 	_refresh_hud()
 	_update_health_bar(_engine.health)
+	_song_progress_pie.value01 = 0.0
 
 	var stream := PlaySession.take_pending_audio_stream()
 	if stream == null:
 		stream = SongLibrary.load_chart_audio(_chart_path, _chart)
 	if stream == null:
 		stream = _build_backing_track()
-	Conductor.play(stream)
+	_disable_stream_loop(stream)
+	# Waits for the real end of the audio (Change 4) instead of cutting it the
+	# instant the chart's last note passes -- see _process() below, which no
+	# longer calls _finish() itself. One-shot: this run's only chance to
+	# finish via a natural audio end; _on_song_failed()/_on_quit_pressed()/
+	# _on_restart_pressed() all call Conductor.stop() first, which never
+	# fires `finished` (Godot only emits it on natural stream completion), so
+	# those paths can't double-trigger this.
+	Conductor.playback_finished.connect(_finish, CONNECT_ONE_SHOT)
+	Conductor.play(stream, 0.0, Config.gameplay.lead_in_ms)
 	Conductor.set_playback_rate(PlaySession.mods.rate)
 
 
@@ -128,9 +133,13 @@ func _process(_delta: float) -> void:
 	var song_ms := Conductor.song_time_ms()
 	_engine.update(song_ms)
 	_playfield.update_state(song_ms, _scroll_speed())
-
-	if song_ms > _chart_end_ms:
-		_finish()
+	if _chart_end_ms > 0.0:
+		# Clamped: song_ms runs negative during the standardized start grace
+		# period (Change 5) and past _chart_end_ms during the audio-out tail
+		# (Change 4) now that the run no longer ends the instant the last
+		# note passes -- the pie reads 0% through the grace period and stays
+		# pinned at 100% while the track finishes playing out.
+		_song_progress_pie.value01 = clampf(song_ms / _chart_end_ms, 0.0, 1.0)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -153,12 +162,31 @@ func _unhandled_input(event: InputEvent) -> void:
 			_engine.on_lane_release(lane, song_ms)
 
 
+## "Chart end" for the progress pie and for sizing the fallback backing
+## track (Change 4 stopped using this to end the run itself -- that now
+## waits for Conductor.playback_finished, the audio's real end).
 func _compute_chart_end_ms() -> float:
 	var latest := 0.0
 	for note in _chart.notes:
 		var note_end := float(note.end_time_ms if note.type == "hold" else note.time_ms)
 		latest = maxf(latest, note_end)
 	return latest + _gameplay.window_good_ms
+
+
+## Defensive guard for Change 4: a stream with an embedded/auto-detected loop
+## point would never fire AudioStreamPlayer's `finished` signal, so
+## Conductor.playback_finished (which _ready() now waits on instead of
+## cutting audio at the chart's last note) would never emit either. Loop
+## lives under a different property name per stream type in Godot 4
+## (AudioStreamWAV.loop_mode vs AudioStreamMP3/AudioStreamOggVorbis.loop),
+## hence the duck-typed checks instead of one typed assignment.
+func _disable_stream_loop(stream: AudioStream) -> void:
+	if stream == null:
+		return
+	if "loop_mode" in stream:
+		stream.loop_mode = AudioStreamWAV.LOOP_DISABLED
+	if "loop" in stream:
+		stream.loop = false
 
 
 ## Legacy/fallback backing track (WP-F): a metronome click track long enough
@@ -268,8 +296,7 @@ func _refresh_hud() -> void:
 
 
 func _update_health_bar(health: float) -> void:
-	var fraction := clampf(health / _gameplay.health_start, 0.0, 1.0)
-	_health_fill.size.x = HEALTH_FILL_MAX_WIDTH * fraction
+	_health_bar.value01 = clampf(health / _gameplay.health_start, 0.0, 1.0)
 
 
 ## Brief scale pulse on a combo increase -- skipped under reduced motion.

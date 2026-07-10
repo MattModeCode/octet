@@ -31,6 +31,8 @@ func get_tests() -> Array[Dictionary]:
 		{"name": "gameplay_sudden_death_mod", "callable": test_sudden_death_mod},
 		{"name": "gameplay_easy_window_mod", "callable": test_easy_window_mod},
 		{"name": "gameplay_mods_init_backcompat", "callable": test_gameplay_mods_init_backcompat},
+		{"name": "gameplay_combo_linear_scoring", "callable": test_combo_linear_scoring},
+		{"name": "gameplay_mod_score_multiplier", "callable": test_mod_score_multiplier},
 	]
 
 
@@ -76,7 +78,7 @@ func test_all_perfect_run() -> bool:
 	engine.on_lane_press(2, 3000.0)
 
 	var ok := true
-	ok = TestRunner._assert(engine.score == 900, "gameplay_all_perfect_run: expected score 900, got %d" % engine.score) and ok
+	ok = TestRunner._assert(engine.score == 600, "gameplay_all_perfect_run: expected score 600, got %d" % engine.score) and ok
 	ok = TestRunner._assert(engine.combo == 3, "gameplay_all_perfect_run: expected combo 3, got %d" % engine.combo) and ok
 	ok = TestRunner._assert(engine.max_combo == 3, "gameplay_all_perfect_run: expected max_combo 3, got %d" % engine.max_combo) and ok
 	ok = TestRunner._assert(is_equal_approx(engine.accuracy(), 1.0), "gameplay_all_perfect_run: expected accuracy 1.0, got %s" % str(engine.accuracy())) and ok
@@ -96,7 +98,7 @@ func test_one_missed_note() -> bool:
 	engine.on_lane_press(2, 3000.0)
 
 	var ok := true
-	ok = TestRunner._assert(engine.score == 600, "gameplay_one_missed_note: expected score 600, got %d" % engine.score) and ok
+	ok = TestRunner._assert(engine.score == 200, "gameplay_one_missed_note: expected score 200, got %d" % engine.score) and ok
 	ok = TestRunner._assert(engine.combo == 1, "gameplay_one_missed_note: expected combo 1, got %d" % engine.combo) and ok
 	ok = TestRunner._assert(engine.max_combo == 1, "gameplay_one_missed_note: expected max_combo 1, got %d" % engine.max_combo) and ok
 	ok = TestRunner._assert(is_equal_approx(engine.accuracy(), 2.0 / 3.0), "gameplay_one_missed_note: expected accuracy 0.667, got %s" % str(engine.accuracy())) and ok
@@ -147,7 +149,7 @@ func test_hold_held_fully() -> bool:
 	engine.on_lane_release(3, 1250.0)
 
 	var ok := true
-	ok = TestRunner._assert(engine.score == 1200, "gameplay_hold_held_fully: expected score 1200, got %d" % engine.score) and ok
+	ok = TestRunner._assert(engine.score == 500, "gameplay_hold_held_fully: expected score 500, got %d" % engine.score) and ok
 	ok = TestRunner._assert(engine.combo == 2, "gameplay_hold_held_fully: expected combo 2 (head + tail only), got %d" % engine.combo) and ok
 	ok = TestRunner._assert(engine.max_combo == 2, "gameplay_hold_held_fully: expected max_combo 2, got %d" % engine.max_combo) and ok
 	ok = TestRunner._assert(is_equal_approx(engine.accuracy(), 1.0), "gameplay_hold_held_fully: expected accuracy 1.0, got %s" % str(engine.accuracy())) and ok
@@ -168,7 +170,7 @@ func test_hold_early_release() -> bool:
 	engine.on_lane_release(3, 1120.0)
 
 	var ok := true
-	ok = TestRunner._assert(engine.score == 600, "gameplay_hold_early_release: expected score 600, got %d" % engine.score) and ok
+	ok = TestRunner._assert(engine.score == 200, "gameplay_hold_early_release: expected score 200, got %d" % engine.score) and ok
 	ok = TestRunner._assert(engine.combo == 0, "gameplay_hold_early_release: expected combo 0 (broken by tail Miss), got %d" % engine.combo) and ok
 	ok = TestRunner._assert(engine.max_combo == 1, "gameplay_hold_early_release: expected max_combo 1 (head only), got %d" % engine.max_combo) and ok
 	ok = TestRunner._assert(is_equal_approx(engine.accuracy(), 0.5), "gameplay_hold_early_release: expected accuracy 0.5, got %s" % str(engine.accuracy())) and ok
@@ -337,4 +339,69 @@ func test_gameplay_mods_init_backcompat() -> bool:
 
 	if ok:
 		print("[PASS] gameplay_mods_init_backcompat")
+	return ok
+
+
+## Points-revamp: JudgeEngine.current_multiplier() is linear and uncapped
+## (multiplier == combo), and combo is incremented *before* score is
+## computed for a discrete hit -- so five consecutive Perfect taps score
+## 100*1 + 100*2 + 100*3 + 100*4 + 100*5 = 1500, not a flat per-hit value.
+func test_combo_linear_scoring() -> bool:
+	var notes: Array[ChartNote] = []
+	for i in 5:
+		notes.append(_tap(0, 1000 + i * 500))
+	var engine := _engine(notes)
+	for i in 5:
+		engine.on_lane_press(0, 1000.0 + i * 500.0)
+
+	var ok := true
+	ok = TestRunner._assert(engine.combo == 5, "gameplay_combo_linear_scoring: expected combo 5, got %d" % engine.combo) and ok
+	ok = TestRunner._assert(engine.score == 1500, "gameplay_combo_linear_scoring: expected score 1500, got %d" % engine.score) and ok
+	if ok:
+		print("[PASS] gameplay_combo_linear_scoring")
+	return ok
+
+
+## GameplayMods.score_multiplier(): each modifier's multiplier against
+## ScoringConfig's defaults, plus a stacked combination (Double speed +
+## Sudden Death = 2.0 * 1.2 = 2.4), per the points-revamp's per-modifier
+## scoring rule ("2x speed increases points, half speed/Easy decreases
+## them").
+func test_mod_score_multiplier() -> bool:
+	var scoring := ScoringConfig.new()
+	var ok := true
+
+	ok = TestRunner._assert(is_equal_approx(GameplayMods.new().score_multiplier(scoring), 1.0),
+		"gameplay_mod_score_multiplier: vanilla expected 1.0") and ok
+
+	var double_speed := GameplayMods.new(false, false, GameplayMods.RATE_DOUBLE)
+	ok = TestRunner._assert(is_equal_approx(double_speed.score_multiplier(scoring), 2.0),
+		"gameplay_mod_score_multiplier: 2x speed expected 2.0, got %s" % str(double_speed.score_multiplier(scoring))) and ok
+
+	var half_speed := GameplayMods.new(false, false, GameplayMods.RATE_HALF)
+	ok = TestRunner._assert(is_equal_approx(half_speed.score_multiplier(scoring), 0.5),
+		"gameplay_mod_score_multiplier: half speed expected 0.5, got %s" % str(half_speed.score_multiplier(scoring))) and ok
+
+	var easy := GameplayMods.new(false, false, GameplayMods.RATE_NORMAL, GameplayMods.EASY_WINDOW_SCALE)
+	ok = TestRunner._assert(is_equal_approx(easy.score_multiplier(scoring), 0.7),
+		"gameplay_mod_score_multiplier: Easy expected 0.7, got %s" % str(easy.score_multiplier(scoring))) and ok
+
+	var no_fail := GameplayMods.new(true)
+	ok = TestRunner._assert(is_equal_approx(no_fail.score_multiplier(scoring), 0.8),
+		"gameplay_mod_score_multiplier: No-Fail expected 0.8, got %s" % str(no_fail.score_multiplier(scoring))) and ok
+
+	var sudden_death := GameplayMods.new(false, false, GameplayMods.RATE_NORMAL, 1.0, true)
+	ok = TestRunner._assert(is_equal_approx(sudden_death.score_multiplier(scoring), 1.2),
+		"gameplay_mod_score_multiplier: Sudden Death expected 1.2, got %s" % str(sudden_death.score_multiplier(scoring))) and ok
+
+	var autoplay := GameplayMods.new(false, false, GameplayMods.RATE_NORMAL, 1.0, false, true)
+	ok = TestRunner._assert(is_equal_approx(autoplay.score_multiplier(scoring), 0.0),
+		"gameplay_mod_score_multiplier: Autopilot expected 0.0, got %s" % str(autoplay.score_multiplier(scoring))) and ok
+
+	var stacked := GameplayMods.new(false, false, GameplayMods.RATE_DOUBLE, 1.0, true, false)
+	ok = TestRunner._assert(is_equal_approx(stacked.score_multiplier(scoring), 2.4),
+		"gameplay_mod_score_multiplier: Double+Sudden Death expected 2.4, got %s" % str(stacked.score_multiplier(scoring))) and ok
+
+	if ok:
+		print("[PASS] gameplay_mod_score_multiplier")
 	return ok

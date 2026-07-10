@@ -36,7 +36,11 @@ const ALL_DIFFICULTIES: Array[Dictionary] = [
 	{"tier": "easy", "name": "Easy", "file": "easy"},
 	{"tier": "normal", "name": "Normal", "file": "normal"},
 	{"tier": "hard", "name": "Hard", "file": "hard"},
-	{"tier": "very_hard", "name": "Very Hard", "file": "very_hard"},
+	## boost: very_hard shares hard's base stride of 1, and its longer motif
+	## spans strip more base notes than they add back -- interleaving 8th-note
+	## midpoints keeps the top tier strictly denser than hard. Only the
+	## five-tier songs opt in; legacy songs' explicit lists stay bit-stable.
+	{"tier": "very_hard", "name": "Very Hard", "file": "very_hard", "boost": true},
 ]
 ## Keep every Nth detected onset for the base (non-motif) rhythm -- higher
 ## stride = sparser = easier.
@@ -309,9 +313,14 @@ func _build_chart(song: Dictionary, diff: Dictionary, bpm: float, offset_ms: flo
 
 	var base_style: String = song.get("base_style", "random_walk")
 	var stride: int = STRIDE_BY_TIER.get(tier, 2)
-	if base_style == "sparse":
+	## sparse doubles the stride except on the top tier: hard and very_hard
+	## share a base stride of 1, so doubling both would leave very_hard with
+	## fewer notes than hard once its longer holds strip more base rhythm.
+	if base_style == "sparse" and tier != "very_hard":
 		stride *= 2
 	var thinned: Array = _thin_onsets(onsets, stride)
+	if diff.get("boost", false):
+		thinned = _interleave_midpoints(thinned, beat_ms)
 	if base_style == "offbeat":
 		var shifted: Array = []
 		for onset_time: float in thinned:
@@ -382,6 +391,20 @@ func _thin_onsets(onsets: Array, stride: int) -> Array:
 	return thinned
 
 
+## very_hard boost: inserts a midpoint tap time between consecutive onsets
+## that sit roughly a beat or more apart, so the top tier reads as 8th-note
+## fills between the hits hard already has.
+func _interleave_midpoints(times: Array, beat_ms: float) -> Array:
+	var result: Array = []
+	for i in times.size():
+		result.append(times[i])
+		if i + 1 < times.size():
+			var gap: float = times[i + 1] - times[i]
+			if gap >= beat_ms * 0.7 and gap <= beat_ms * 2.5:
+				result.append(times[i] + gap * 0.5)
+	return result
+
+
 ## Assigns a lane to each base-rhythm time, avoiding an immediate repeat of
 ## the previous lane so plain taps read as movement across the keyboard
 ## rather than a single-lane drone (that's reserved for the spam motifs).
@@ -415,10 +438,10 @@ func _assign_adjacent_walk(rng: RandomNumberGenerator, times: Array) -> Array[Ch
 		note.time_ms = int(round(t))
 		note.type = "tap"
 		notes.append(note)
-		lane += dir
-		if lane <= 0 or lane >= 7:
+		lane = clampi(lane + dir, 0, 7)
+		if lane == 0 or lane == 7:
 			dir = -dir
-		if rng.randf() < 0.15:
+		elif rng.randf() < 0.15:
 			dir = -dir
 	return notes
 

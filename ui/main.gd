@@ -14,6 +14,12 @@ const PROFILE_SCENE := "res://ui/profile.tscn"
 ## accessibility, with a link through to lane rebinding).
 const SETTINGS_SCENE := "res://ui/settings.tscn"
 
+## First-visit onboarding id (core/settings_store.gd) -- points a newcomer at
+## Browse Maps, since a fresh install ships with nothing to play but the
+## built-in Tutorial (core/song_library.gd's TUTORIAL_DIR) until they visit
+## Map Hub and download something.
+const COACH_ID := "main_intro"
+
 ## DesignTokens is an autoload singleton, but lane_color() is static -- call
 ## it on the script itself rather than the instance to avoid Godot's
 ## STATIC_CALLED_ON_INSTANCE warning.
@@ -73,6 +79,9 @@ func _ready() -> void:
 	_wire_buttons()
 	_start_wordmark_glow()
 	_start_ambient_music()
+	# Deferred so %BrowseMapsButton has been through a layout pass (its
+	# get_global_rect() would be zero-sized on the very first frame).
+	_maybe_show_coach_marks.call_deferred()
 
 
 ## Eight bars, mirrored lane spectrum (same order as DesignTokens.LANE_COLORS),
@@ -317,3 +326,22 @@ func _reduced_motion() -> bool:
 ## directly in the editor) even before every autoload exists.
 func _has_autoload(autoload_name: String) -> bool:
 	return get_tree() != null and get_tree().root.has_node(autoload_name)
+
+
+## First-visit onboarding (ui/components/coach_mark.gd): a single step
+## pointing a newcomer at Browse Maps. No-op if COACH_ID was already
+## recorded seen.
+func _maybe_show_coach_marks() -> void:
+	if not _has_autoload("SettingsStore") or SettingsStore.has_seen_coach(COACH_ID):
+		return
+
+	var steps: Array[Dictionary] = [{
+		"target": _browse_maps_button,
+		"title": "New here?",
+		"body": "You'll start with an empty library. Tap [b]Browse Maps[/b] to download songs -- or try the built-in [b]Tutorial[/b] under Play first.",
+	}]
+
+	var coach: Control = preload("res://ui/components/coach_mark.tscn").instantiate()
+	add_child(coach)
+	coach.finished.connect(func() -> void: SettingsStore.mark_coach_seen(COACH_ID))
+	coach.show_sequence(steps)

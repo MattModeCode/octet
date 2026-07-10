@@ -27,12 +27,45 @@ var _is_playing: bool = false
 var _paused_ms: float = 0.0
 var _last_song_time_ms: float = 0.0
 
+## Lead-in / grace-period state (standardized "get ready" runway, gameplay.gd
+## _ready() passing Config.gameplay.lead_in_ms into play()): while
+## _lead_in_total_ms > 0.0, real playback of _pending_stream is deferred
+## until _lead_in_start_usec + _lead_in_total_ms of wall-clock time
+## (Time.get_ticks_usec(), not frame delta, so it can't drift under a frame
+## hitch) has elapsed, and song_time_ms() reports a rising negative value
+## (-lead_in -> 0) so notes fall in before any can be judged. 0.0 whenever no
+## lead-in is in progress.
+var _lead_in_total_ms: float = 0.0
+var _lead_in_start_usec: int = 0
+var _pending_stream: AudioStream
+var _pending_from_ms: float = 0.0
+
+## Emitted when the underlying AudioStreamPlayer reaches the natural end of
+## its stream. Godot only fires AudioStreamPlayer.finished on real
+## completion -- never on stop() or pause() -- so gameplay.gd can wait on
+## this to let a song's audio play out fully instead of cutting it the
+## instant the chart's last note passes.
+signal playback_finished
+
 
 func _ready() -> void:
 	_player = AudioStreamPlayer.new()
 	_player.name = "ConductorPlayer"
 	_player.bus = "Music"
+	_player.finished.connect(func() -> void: playback_finished.emit())
 	add_child(_player)
+
+
+func _process(_delta: float) -> void:
+	if not _is_playing or _lead_in_total_ms <= 0.0:
+		return
+	var elapsed_ms := (Time.get_ticks_usec() - _lead_in_start_usec) / 1000.0
+	if elapsed_ms < _lead_in_total_ms:
+		return
+	_lead_in_total_ms = 0.0
+	_player.stream = _pending_stream
+	_player.play(_pending_from_ms / 1000.0)
+	_last_song_time_ms = _pending_from_ms + audio_offset_ms()
 
 
 # ---------------------------------------------------------------------------
@@ -60,11 +93,24 @@ static func judgment_error_ms(tap_song_time_ms: float, note_target_ms: float, in
 # Instance behaviour
 # ---------------------------------------------------------------------------
 
-## Starts (or restarts) playback of [param stream], seeked to [param from_ms].
-func play(stream: AudioStream, from_ms: float = 0.0) -> void:
+## Starts (or restarts) playback of [param stream], seeked to [param from_ms],
+## optionally preceded by [param lead_in_ms] of standardized "get ready" time
+## during which song time is negative (rising to 0) and no audio plays.
+## Defaults to 0.0 (no lead-in), so every other caller (editor preview,
+## calibration, vertical-slice) is unaffected.
+func play(stream: AudioStream, from_ms: float = 0.0, lead_in_ms: float = 0.0) -> void:
+	_is_playing = true
+	if lead_in_ms > 0.0:
+		_pending_stream = stream
+		_pending_from_ms = from_ms
+		_lead_in_total_ms = lead_in_ms
+		_lead_in_start_usec = Time.get_ticks_usec()
+		_last_song_time_ms = -lead_in_ms
+		_player.stream = null
+		return
+	_lead_in_total_ms = 0.0
 	_player.stream = stream
 	_player.play(from_ms / 1000.0)
-	_is_playing = true
 	_last_song_time_ms = from_ms + audio_offset_ms()
 
 
@@ -73,21 +119,31 @@ func stop() -> void:
 	_is_playing = false
 	_paused_ms = 0.0
 	_last_song_time_ms = 0.0
+	_lead_in_total_ms = 0.0
 
 
 func pause() -> void:
 	if not _is_playing:
 		return
 	_paused_ms = song_time_ms()
-	_player.stream_paused = true
 	_is_playing = false
+	if _lead_in_total_ms <= 0.0:
+		_player.stream_paused = true
 
 
+## Resuming mid-lead-in rebases the wall-clock anchor to the remaining grace
+## period (not wall-clock time spent paused), so pausing during the grace
+## period actually pauses its countdown instead of the audio silently
+## starting at the originally-scheduled moment regardless.
 func resume() -> void:
 	if _is_playing:
 		return
-	_player.stream_paused = false
 	_is_playing = true
+	if _lead_in_total_ms > 0.0:
+		var elapsed_ms := _lead_in_total_ms + _paused_ms
+		_lead_in_start_usec = Time.get_ticks_usec() - int(elapsed_ms * 1000.0)
+		return
+	_player.stream_paused = false
 	_last_song_time_ms = _paused_ms
 
 
@@ -130,6 +186,14 @@ func playback_rate() -> float:
 func song_time_ms() -> float:
 	if not _is_playing:
 		return _paused_ms
+
+	if _lead_in_total_ms > 0.0:
+		var elapsed_ms := (Time.get_ticks_usec() - _lead_in_start_usec) / 1000.0
+		var lead_in_ms := -_lead_in_total_ms + minf(elapsed_ms, _lead_in_total_ms)
+		if lead_in_ms < _last_song_time_ms:
+			lead_in_ms = _last_song_time_ms
+		_last_song_time_ms = lead_in_ms
+		return lead_in_ms
 
 	var raw_stream_sec := _player.get_playback_position() + AudioServer.get_time_since_last_mix()
 	var latency_sec := AudioServer.get_output_latency()

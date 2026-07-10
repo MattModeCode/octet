@@ -15,6 +15,11 @@ extends RefCounted
 const FIXTURE_DIR: String = "res://tests/fixtures"
 const SONGS_DIR: String = "res://songs"
 const USER_SONGS_DIR: String = "user://songs"
+## Always-shipped tutorial chart (see game/tutorial.gd) -- kept separate from
+## SONGS_DIR so a fresh install with no bundled/downloaded songs still shows
+## exactly one playable entry (the built-in Tutorial) rather than an empty
+## Song Select.
+const TUTORIAL_DIR: String = "res://tutorial"
 
 ## Cover-art filename tried, in order, next to a song's .oct file(s) --
 ## see resolve_cover_path() below.
@@ -28,7 +33,7 @@ const COVER_FILENAMES: PackedStringArray = ["cover.jpg", "cover.png"]
 ## {"path": String, "chart": Chart, "mtime": int}.
 static func scan_charts() -> Array[Dictionary]:
 	var entries: Array[Dictionary] = []
-	for dir_path in [SONGS_DIR, USER_SONGS_DIR]:
+	for dir_path in [SONGS_DIR, USER_SONGS_DIR, TUTORIAL_DIR]:
 		_scan_recursive(dir_path, entries)
 	return entries
 
