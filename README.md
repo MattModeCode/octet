@@ -79,3 +79,4 @@ Octet is built in Godot 4.7 (pure GDScript, including a hand-rolled audio-analys
 - [`docs/CODEMAPS/`](docs/CODEMAPS/) — architecture, gameplay, editor, UI, and data codemaps
 
 **Roadmap:** shipped — full gameplay, editor with auto BPM/beat detection, and Map Hub browse/download (M1–M3, through v1.1.0). Next up — accounts, real map publishing, and leaderboards (M4), then community features and signed installers (M5).
+
